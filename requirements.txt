@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+PyJWT
+cryptography
+google-auth
+sqlalchemy
+psycopg2-binary
