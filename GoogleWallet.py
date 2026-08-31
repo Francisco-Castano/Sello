@@ -4,7 +4,7 @@ import time
 import jwt
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CREDENTIALS_PATH = os.path.join(BASE_DIR, 'sello-proyecto-inicial-3d27f739fa4b.json')
+CREDENTIALS_PATH = os.path.join(BASE_DIR, 'sello-proyecto-inicial-0f9f4f6f0e32.json')
 
 # Pega aquí tu Issuer ID numérico
 MI_ISSUER_ID = "3388000000023143752"
