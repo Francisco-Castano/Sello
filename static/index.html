@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sello - Obtén tu Tarjeta</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f4f6f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .card {
+      background: white;
+      padding: 32px 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      color: #111827;
+    }
+    p {
+      color: #6b7280;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+      margin-bottom: 16px;
+      outline: none;
+    }
+    input:focus {
+      border-color: #2563eb;
+    }
+    button.btn-submit {
+      width: 100%;
+      background-color: #111827;
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.btn-submit:hover {
+      background-color: #1f2937;
+    }
+    #wallet-container {
+      margin-top: 24px;
+      display: none;
+    }
+    .wallet-button img {
+      height: 48px;
+      transition: transform 0.1s;
+    }
+    .wallet-button img:active {
+      transform: scale(0.97);
+    }
+    #loader {
+      display: none;
+      margin-top: 16px;
+      color: #4b5563;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Sello Club</h1>
+    <p>Ingresa tus datos para generar tu tarjeta digital y sumarte al programa de beneficios.</p>
+
+    <input type="text" id="userName" placeholder="Tu nombre completo" required />
+    <input type="tel" id="userPhone" placeholder="Tu teléfono (opcional)" />
+    
+    <button class="btn-submit" id="generateBtn" onclick="crearPase()">Generar mi Tarjeta</button>
+
+    <div id="loader">Generando tu pase seguro...</div>
+
+    <div id="wallet-container">
+      <p style="margin-bottom: 12px; font-weight: 500;">¡Tu tarjeta está lista!</p>
+      <a id="walletLink" href="#" target="_blank" class="wallet-button">
+        <!-- Botón oficial estilizado de Google Wallet -->
+        <img src="https://toolbox.googlepay.com/create/images/es-419_add_to_google_wallet_wallet-button.svg" alt="Añadir a Google Wallet" />
+      </a>
+    </div>
+  </div>
+
+  <script>
+    async function crearPase() {
+      const name = document.getElementById("userName").value.trim();
+      const phone = document.getElementById("userPhone").value.trim();
+      const loader = document.getElementById("loader");
+      const walletContainer = document.getElementById("wallet-container");
+      const walletLink = document.getElementById("walletLink");
+      const generateBtn = document.getElementById("generateBtn");
+
+      if (!name) {
+        alert("Por favor ingresa tu nombre");
+        return;
+      }
+
+      loader.style.display = "block";
+      walletContainer.style.display = "none";
+      generateBtn.disabled = true;
+
+      try {
+        const response = await fetch("/crear-pase-google", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name, phone: phone || "N/A" }),
+        });
+
+        const data = await response.json();
+
+        if (data.wallet_url) {
+          walletLink.href = data.wallet_url;
+          walletContainer.style.display = "block";
+        } else {
+          alert("Ocurrió un error al generar el enlace.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error de conexión con el servidor.");
+      } finally {
+        loader.style.display = "none";
+        generateBtn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
