@@ -1,3 +1,8 @@
+"""
+Lógica de negocio para la gestión de pases y tarjetas de lealtad.
+Controla la emisión de tarjetas, acumulación de sellos, canjes y estados de los pases de los clientes.
+"""
+
 import uuid
 from sqlalchemy import Column, String, DateTime, Enum, JSON
 from sqlalchemy.dialects.postgresql import UUID

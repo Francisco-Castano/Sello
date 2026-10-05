@@ -1,3 +1,8 @@
+"""
+Configuración de la base de datos y la sesión.
+Establece la conexión con SQLite (sello.db) y provee la dependencia de sesión para SQLAlchemy.
+"""
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 

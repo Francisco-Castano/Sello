@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sello POS - Terminal de Caja</title>
+  <!-- Librería ligera y confiable para lectura de QR vía cámara web/móvil -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .container {
+      width: 100%;
+      max-width: 420px;
+    }
+    h1 {
+      font-size: 22px;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    p.subtitle {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    #reader {
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    .card-panel {
+      background-color: #1e293b;
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 16px;
+      display: none;
+      border: 1px solid #334155;
+    }
+    .badge {
+      display: inline-block;
+      background: #0284c7;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .user-info {
+      margin-bottom: 16px;
+    }
+    .user-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: #f1f5f9;
+    }
+    .balance-display {
+      font-size: 28px;
+      font-weight: 800;
+      color: #38bdf8;
+      margin: 8px 0;
+    }
+    .input-group {
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #475569;
+      background-color: #0f172a;
+      color: white;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+      outline: none;
+    }
+    input:focus {
+      border-color: #38bdf8;
+    }
+    .btn-action {
+      width: 100%;
+      background-color: #0284c7;
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn-action:hover {
+      background-color: #0369a1;
+    }
+    .btn-secondary {
+      background-color: transparent;
+      color: #94a3b8;
+      border: 1px solid #475569;
+      margin-top: 10px;
+    }
+    .btn-secondary:hover {
+      background-color: #334155;
+    }
+    #status-msg {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Sello POS</h1>
+    <p class="subtitle">Escanea la tarjeta del cliente para acreditar puntos</p>
+
+    <!-- Visor de la cámara -->
+    <div id="reader"></div>
+
+    <!-- Panel de control de puntos tras escanear -->
+    <div id="card-panel" class="card-panel">
+      <span class="badge" id="business-badge">Comercio</span>
+      <div class="user-info">
+        <div class="user-name" id="client-name">Cliente</div>
+        <div style="font-size: 12px; color: #94a3b8;" id="pass-id-label">ID: ...</div>
+      </div>
+
+      <div style="font-size: 13px; color: #94a3b8;">Saldo actual:</div>
+      <div class="balance-display" id="client-balance">0 pts</div>
+
+      <div class="input-group">
+        <label for="points-input">Puntos a sumar:</label>
+        <input type="number" id="points-input" value="10" min="1" />
+      </div>
+
+      <div class="input-group">
+        <label for="desc-input">Concepto / Motivo:</label>
+        <input type="text" id="desc-input" value="Compra en caja" />
+      </div>
+
+      <button class="btn-action" id="submit-points-btn" onclick="acreditarPuntos()">Sumar Puntos</button>
+      <button class="btn-action btn-secondary" onclick="reiniciarEscaneo()">Escanear otro cliente</button>
+
+      <div id="status-msg"></div>
+    </div>
+  </div>
+
+  <script>
+    let html5QrCode = null;
+    let currentPassId = null;
+
+    function iniciarCamara() {
+      html5QrCode = new Html5Qrcode("reader");
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+      html5QrCode.start(
+        { facingMode: "environment" }, // Prioriza cámara trasera en teléfonos
+        config,
+        onScanSuccess
+      ).catch(err => {
+        console.error("No se pudo iniciar la cámara:", err);
+      });
+    }
+
+    async function onScanSuccess(decodedText) {
+      // decodedText es el valor del QR (ej: sello_a1b2c3d4)
+      currentPassId = decodedText.trim();
+      
+      // Detener cámara para congelar la pantalla y mostrar datos
+      await html5QrCode.stop();
+      document.getElementById("reader").style.display = "none";
+
+      consultarPase(currentPassId);
+    }
+
+    async function consultarPase(passId) {
+      try {
+        const res = await fetch(`/passes/${passId}`);
+        if (!res.ok) {
+          alert("Pase no encontrado en la base de datos");
+          reiniciarEscaneo();
+          return;
+        }
+
+        const data = await res.json();
+        document.getElementById("client-name").innerText = data.client_name;
+        document.getElementById("pass-id-label").innerText = `ID: ${data.pass_id}`;
+        document.getElementById("business-badge").innerText = data.business;
+        document.getElementById("client-balance").innerText = `${data.balance} pts`;
+        document.getElementById("card-panel").style.display = "block";
+      } catch (err) {
+        console.error(err);
+        alert("Error al consultar el pase.");
+        reiniciarEscaneo();
+      }
+    }
+
+    async function acreditarPuntos() {
+      const points = parseInt(document.getElementById("points-input").value);
+      const desc = document.getElementById("desc-input").value;
+      const statusMsg = document.getElementById("status-msg");
+      const btn = document.getElementById("submit-points-btn");
+
+      if (isNaN(points) || points <= 0) {
+        alert("Ingresa una cantidad de puntos válida");
+        return;
+      }
+
+      btn.disabled = true;
+      statusMsg.style.color = "#94a3b8";
+      statusMsg.innerText = "Acreditando...";
+
+      try {
+        const res = await fetch(`/passes/${currentPassId}/sumar-puntos`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ points: points, description: desc })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById("client-balance").innerText = `${data.new_balance} pts`;
+          statusMsg.style.color = "#4ade80";
+          statusMsg.innerText = `¡Sumados ${points} puntos con éxito!`;
+        } else {
+          statusMsg.style.color = "#f87171";
+          statusMsg.innerText = "Error al acreditar puntos.";
+        }
+    
+      } catch (err) {
+        console.error(err);
+        statusMsg.style.color = "#f87171";
+        statusMsg.innerText = "Error de red con el servidor.";
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function reiniciarEscaneo() {
+      document.getElementById("card-panel").style.display = "none";
+      document.getElementById("status-msg").innerText = "";
+      document.getElementById("reader").style.display = "block";
+      iniciarCamara();
+    }
+
+    window.addEventListener("load", iniciarCamara);
+  </script>
+</body>
+</html>

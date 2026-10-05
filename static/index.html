@@ -121,24 +121,24 @@
       generateBtn.disabled = true;
 
       try {
-        const response = await fetch("/passes/crear-pase-google", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: name, phone: phone || "N/A" }),
-        });
+      const response = await fetch("/passes/crear-google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name, phone: phone || "N/A", business_slug: "demo-cafe" }),
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (data.wallet_url) {
-          walletLink.href = data.wallet_url;
-          walletContainer.style.display = "block";
-        } else {
-          alert("Ocurrió un error al generar el enlace.");
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Error de conexión con el servidor.");
-      } finally {
+      if (response.ok && data.wallet_url) {
+        walletLink.href = data.wallet_url;
+        walletContainer.style.display = "block";
+      } else {
+        alert("Error del servidor: " + (data.detail || JSON.stringify(data)));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error de conexión: " + err.message);
+    }finally {
         loader.style.display = "none";
         generateBtn.disabled = false;
       }

@@ -1,3 +1,8 @@
+"""
+Definición de modelos de datos y esquemas (ORM y Pydantic).
+Estructura las tablas de la base de datos (comercios, usuarios, pases/tarjetas) y sus validaciones.
+"""
+
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, JSON

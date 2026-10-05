@@ -1,3 +1,8 @@
+"""
+Enrutador de FastAPI para la gestión de comercios.
+Maneja los endpoints de registro, configuración de perfiles de negocios y administración de locales.
+"""
+
 import re
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field

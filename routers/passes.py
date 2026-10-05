@@ -1,10 +1,15 @@
+"""
+Enrutador de FastAPI para la gestión de pases.
+Maneja los endpoints para emitir tarjetas, sumar sellos a clientes y consultar el estado de fidelización.
+"""
+
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database import get_db
 import models
-from GoogleWallet import MI_ISSUER_ID, generate_google_wallet_url
+from GoogleWallet import MI_ISSUER_ID, generate_google_wallet_url, update_google_wallet_balance
 
 router = APIRouter(
     prefix="/passes",
@@ -99,4 +104,38 @@ def get_pass_info(pass_id: str, db: Session = Depends(get_db)):
         "business": pass_obj.business.name,
         "balance": pass_obj.balance,
         "status": pass_obj.status
+    }
+
+@router.post("/{pass_id}/sumar-puntos")
+def add_points(pass_id: str, data: AddPointsRequest, db: Session = Depends(get_db)):
+    # 1. Buscar el pase en la base de datos local
+    pass_obj = db.query(models.Pass).filter(models.Pass.id == pass_id).first()
+    if not pass_obj:
+        raise HTTPException(status_code=404, detail="Pase no encontrado")
+
+    # 2. Actualizar el saldo y guardar la transacción contable
+    pass_obj.balance += data.points
+    tx = models.Transaction(
+        pass_id=pass_obj.id,
+        points=data.points,
+        description=data.description
+    )
+    db.add(tx)
+    db.commit()
+    db.refresh(pass_obj)
+
+    # 3. Sincronizar en vivo con Google Wallet
+    push_success = update_google_wallet_balance(
+        issuer_id=MI_ISSUER_ID,
+        pass_id=pass_obj.id,
+        new_balance=pass_obj.balance,
+        points_added=data.points
+    )
+
+    return {
+        "status": "ok",
+        "pass_id": pass_obj.id,
+        "points_added": data.points,
+        "new_balance": pass_obj.balance,
+        "google_wallet_synced": push_success
     }
