@@ -18,11 +18,17 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.include_router(auth.router)
 app.include_router(businesses.router)
+app.include_router(businesses.public_router)
 app.include_router(passes.router)
 
 # Ruta del cliente (Registro y guardado en Google Wallet)
+# Cada comercio comparte su link /c/{slug}; sin slug la página pide el link del comercio
 @app.get("/")
 def read_root():
+    return FileResponse("static/index.html")
+
+@app.get("/c/{slug}")
+def read_business_signup(slug: str):
     return FileResponse("static/index.html")
 
 # Ruta del comerciante / POS (Lector QR y carga de puntos)

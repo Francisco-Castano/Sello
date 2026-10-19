@@ -21,7 +21,7 @@ MIN_PASSWORD_LENGTH = 8
 def list_businesses(db):
     for b in db.query(models.Business).order_by(models.Business.created_at).all():
         has_password = "con clave" if b.pos_credential else "SIN clave"
-        print(f"- {b.slug:<25} {b.name}  ({has_password})")
+        print(f"- {b.slug:<25} {b.name}  ({has_password})  registro: /c/{b.slug}")
 
 
 def create_business(db, name: str, slug: str | None):
@@ -32,6 +32,7 @@ def create_business(db, name: str, slug: str | None):
     db.add(models.Business(name=name, slug=slug))
     db.commit()
     print(f"Comercio creado: {name} ({slug})")
+    print(f"Link de registro para sus clientes: /c/{slug}")
     print(f"Ahora definile la clave de caja con: python admin.py clave-pos {slug}")
 
 

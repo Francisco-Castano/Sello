@@ -20,7 +20,7 @@ router = APIRouter(
 class UserRegisterRequest(BaseModel):
     name: str
     phone: str
-    business_slug: str = "demo-cafe"
+    business_slug: str
 
 class AddPointsRequest(BaseModel):
     points: int
@@ -45,6 +45,20 @@ def create_pass(data: UserRegisterRequest, db: Session = Depends(get_db)):
     # 16 caracteres hex para que los IDs no se puedan adivinar
     unique_pass_id = f"sello_{uuid.uuid4().hex[:16]}"
 
+    # Se firma el link antes de guardar el pase, así un error de credenciales no deja pases sin tarjeta
+    try:
+        wallet_url = generate_google_wallet_url(
+            issuer_id=MI_ISSUER_ID,
+            pass_id=unique_pass_id,
+            user_name=user.name
+        )
+    except Exception as e:
+        print(f"[GoogleWallet] No se pudo firmar el pase: {e!r}")
+        raise HTTPException(
+            status_code=503,
+            detail="El servidor no tiene bien configuradas las credenciales de Google Wallet"
+        )
+
     new_pass = models.Pass(
         id=unique_pass_id,
         business_id=business.id,
@@ -55,12 +69,6 @@ def create_pass(data: UserRegisterRequest, db: Session = Depends(get_db)):
     db.add(new_pass)
     db.commit()
     db.refresh(new_pass)
-
-    wallet_url = generate_google_wallet_url(
-        issuer_id=MI_ISSUER_ID,
-        pass_id=unique_pass_id,
-        user_name=user.name
-    )
 
     return {
         "status": "ok",

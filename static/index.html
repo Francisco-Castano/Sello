@@ -73,6 +73,18 @@
     .wallet-button img:active {
       transform: scale(0.97);
     }
+    #signup-form {
+      display: none;
+    }
+    #page-msg {
+      color: #6b7280;
+      font-size: 14px;
+    }
+    #error-msg {
+      color: #dc2626;
+      font-size: 14px;
+      margin-top: 12px;
+    }
     #loader {
       display: none;
       margin-top: 16px;
@@ -83,15 +95,18 @@
 </head>
 <body>
   <div class="card">
-    <h1>Sello Club</h1>
-    <p>Ingresa tus datos para generar tu tarjeta digital y sumarte al programa de beneficios.</p>
+    <h1 id="business-title">Sello Club</h1>
+    <p id="page-msg">Cargando...</p>
 
-    <input type="text" id="userName" placeholder="Tu nombre completo" required />
-    <input type="tel" id="userPhone" placeholder="Tu teléfono (opcional)" />
-    
-    <button class="btn-submit" id="generateBtn" onclick="crearPase()">Generar mi Tarjeta</button>
+    <div id="signup-form">
+      <input type="text" id="userName" placeholder="Tu nombre completo" required />
+      <input type="tel" id="userPhone" placeholder="Tu teléfono (opcional)" />
 
-    <div id="loader">Generando tu pase seguro...</div>
+      <button class="btn-submit" id="generateBtn" onclick="crearPase()">Generar mi Tarjeta</button>
+
+      <div id="loader">Generando tu pase seguro...</div>
+      <div id="error-msg"></div>
+    </div>
 
     <div id="wallet-container">
       <p style="margin-bottom: 12px; font-weight: 500;">¡Tu tarjeta está lista!</p>
@@ -103,46 +118,97 @@
   </div>
 
   <script>
+    // El comercio sale del link: /c/{slug}
+    const pathMatch = window.location.pathname.match(/^\/c\/([^\/]+)\/?$/);
+    const businessSlug = pathMatch ? decodeURIComponent(pathMatch[1]) : null;
+
+    function mostrarMensaje(texto) {
+      document.getElementById("page-msg").innerText = texto;
+      document.getElementById("signup-form").style.display = "none";
+    }
+
+    // Lee la respuesta aunque el servidor no devuelva JSON (por ejemplo, un error 500)
+    async function leerRespuesta(response) {
+      try {
+        return await response.json();
+      } catch (e) {
+        return {};
+      }
+    }
+
+    async function cargarComercio() {
+      if (!businessSlug) {
+        mostrarMensaje("Para obtener tu tarjeta, usá el link que te dio el comercio.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`/public/businesses/${encodeURIComponent(businessSlug)}`);
+        if (response.status === 404) {
+          mostrarMensaje("No encontramos este comercio. Revisá el link que te pasaron.");
+          return;
+        }
+        if (!response.ok) {
+          mostrarMensaje("No pudimos cargar el comercio. Probá de nuevo en un rato.");
+          return;
+        }
+
+        const business = await response.json();
+        document.title = `${business.name} - Obtén tu Tarjeta`;
+        document.getElementById("business-title").innerText = business.name;
+        document.getElementById("page-msg").innerText =
+          "Ingresa tus datos para generar tu tarjeta digital y sumarte al programa de beneficios.";
+        document.getElementById("signup-form").style.display = "block";
+      } catch (err) {
+        console.error(err);
+        mostrarMensaje("No pudimos conectarnos con el servidor. Probá de nuevo en un rato.");
+      }
+    }
+
     async function crearPase() {
       const name = document.getElementById("userName").value.trim();
       const phone = document.getElementById("userPhone").value.trim();
       const loader = document.getElementById("loader");
+      const errorMsg = document.getElementById("error-msg");
       const walletContainer = document.getElementById("wallet-container");
       const walletLink = document.getElementById("walletLink");
       const generateBtn = document.getElementById("generateBtn");
 
       if (!name) {
-        alert("Por favor ingresa tu nombre");
+        errorMsg.innerText = "Por favor ingresa tu nombre";
         return;
       }
 
       loader.style.display = "block";
+      errorMsg.innerText = "";
       walletContainer.style.display = "none";
       generateBtn.disabled = true;
 
       try {
-      const response = await fetch("/passes/crear-google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name, phone: phone || "N/A", business_slug: "demo-cafe" }),
-      });
+        const response = await fetch("/passes/crear-google", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name, phone: phone || "N/A", business_slug: businessSlug }),
+        });
 
-      const data = await response.json();
+        const data = await leerRespuesta(response);
 
-      if (response.ok && data.wallet_url) {
-        walletLink.href = data.wallet_url;
-        walletContainer.style.display = "block";
-      } else {
-        alert("Error del servidor: " + (data.detail || JSON.stringify(data)));
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error de conexión: " + err.message);
-    }finally {
+        if (response.ok && data.wallet_url) {
+          walletLink.href = data.wallet_url;
+          walletContainer.style.display = "block";
+        } else {
+          errorMsg.innerText = (typeof data.detail === "string" && data.detail) || `No pudimos generar tu tarjeta (error ${response.status}). Avisale al comercio.`;
+        }
+      } catch (err) {
+        console.error(err);
+        errorMsg.innerText = "No pudimos conectarnos con el servidor. Probá de nuevo en un rato.";
+      } finally {
         loader.style.display = "none";
         generateBtn.disabled = false;
       }
     }
+
+    window.addEventListener("load", cargarComercio);
   </script>
 </body>
 </html>

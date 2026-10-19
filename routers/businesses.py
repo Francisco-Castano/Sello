@@ -17,6 +17,12 @@ router = APIRouter(
     dependencies=[Depends(require_admin)]
 )
 
+# Datos públicos del comercio, para la página de registro de clientes (/c/{slug})
+public_router = APIRouter(
+    prefix="/public/businesses",
+    tags=["Comercios (público)"]
+)
+
 class BusinessCreate(BaseModel):
     name: str = Field(..., example="Pizzería Nápoles")
     slug: str | None = Field(None, example="pizzeria-napoles")
@@ -56,3 +62,10 @@ def list_businesses(db: Session = Depends(get_db)):
         {"id": b.id, "name": b.name, "slug": b.slug, "created_at": b.created_at}
         for b in businesses
     ]
+@public_router.get("/{slug}")
+def get_public_business(slug: str, db: Session = Depends(get_db)):
+    business = db.query(models.Business).filter(models.Business.slug == slug).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Comercio no encontrado")
+
+    return {"name": business.name, "slug": business.slug}
