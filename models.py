@@ -16,6 +16,8 @@ class Business(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String, nullable=False)                     # Ej: Cafetería Roma
     slug = Column(String, unique=True, index=True, nullable=False) # Ej: cafeteria-roma (para su link)
+    status = Column(String, nullable=False, default="active", server_default="active")  # pending, active, suspended
+    contact_email = Column(String, nullable=True)             # Para avisarle cuando se aprueba el alta
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relaciones

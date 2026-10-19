@@ -31,6 +31,8 @@ def create_pass(data: UserRegisterRequest, db: Session = Depends(get_db)):
     business = db.query(models.Business).filter(models.Business.slug == data.business_slug).first()
     if not business:
         raise HTTPException(status_code=404, detail="Comercio no encontrado")
+    if business.status != "active":
+        raise HTTPException(status_code=403, detail="Este comercio todavía no está habilitado")
 
     user = None
     if data.phone and data.phone != "N/A":

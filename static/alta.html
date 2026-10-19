@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sello - Sumá tu comercio</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f4f6f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .card {
+      background: white;
+      padding: 32px 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      width: 100%;
+      max-width: 420px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      color: #111827;
+      text-align: center;
+    }
+    p.intro {
+      color: #6b7280;
+      font-size: 14px;
+      margin: 0 0 24px;
+      text-align: center;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+      outline: none;
+    }
+    input:focus {
+      border-color: #2563eb;
+    }
+    .field {
+      margin-bottom: 16px;
+    }
+    .hint {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 6px;
+      word-break: break-all;
+    }
+    .slug-input {
+      display: flex;
+      align-items: center;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .slug-input:focus-within {
+      border-color: #2563eb;
+    }
+    .slug-input span {
+      padding: 12px 0 12px 12px;
+      color: #9ca3af;
+      font-size: 16px;
+      white-space: nowrap;
+    }
+    .slug-input input {
+      border: none;
+      padding-left: 2px;
+    }
+    button.btn-submit {
+      width: 100%;
+      background-color: #111827;
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    button.btn-submit:hover {
+      background-color: #1f2937;
+    }
+    button.btn-submit:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    #error-msg {
+      color: #dc2626;
+      font-size: 14px;
+      margin-top: 12px;
+      text-align: center;
+    }
+    #done-panel {
+      display: none;
+      text-align: center;
+    }
+    #done-panel p {
+      color: #4b5563;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .links {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: left;
+      font-size: 14px;
+      color: #374151;
+      margin-top: 16px;
+      word-break: break-all;
+    }
+    .links div + div {
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <form id="signup-form" onsubmit="enviarAlta(event)">
+      <h1>Sumá tu comercio</h1>
+      <p class="intro">Creá la tarjeta de fidelidad de tu local. Revisamos cada alta y te avisamos por email cuando esté habilitada.</p>
+
+      <div class="field">
+        <label for="name">Nombre del comercio</label>
+        <input type="text" id="name" placeholder="Ej: Cafetería Roma" maxlength="80" required />
+      </div>
+
+      <div class="field">
+        <label for="slug">Link para tus clientes</label>
+        <div class="slug-input">
+          <span id="slug-prefix">/c/</span>
+          <input type="text" id="slug" placeholder="cafeteria-roma" maxlength="40" required />
+        </div>
+        <div class="hint">Solo letras, números y guiones. Es el link que vas a compartir para que tus clientes saquen su tarjeta.</div>
+      </div>
+
+      <div class="field">
+        <label for="email">Email de contacto</label>
+        <input type="email" id="email" placeholder="hola@tucomercio.com" autocomplete="email" required />
+      </div>
+
+      <div class="field">
+        <label for="password">Clave de caja</label>
+        <input type="password" id="password" minlength="8" autocomplete="new-password" required />
+        <div class="hint">Mínimo 8 caracteres. La usan todas las cajas de tu comercio para entrar a /pos.</div>
+      </div>
+
+      <div class="field">
+        <label for="password2">Repetí la clave</label>
+        <input type="password" id="password2" minlength="8" autocomplete="new-password" required />
+      </div>
+
+      <button class="btn-submit" id="submit-btn" type="submit">Enviar solicitud</button>
+      <div id="error-msg"></div>
+    </form>
+
+    <div id="done-panel">
+      <h1>¡Solicitud enviada!</h1>
+      <p>Recibimos el alta de <strong id="done-name"></strong>. Te vamos a escribir a <strong id="done-email"></strong> cuando esté aprobada.</p>
+      <div class="links">
+        <div>Link para tus clientes: <strong id="done-signup-link"></strong></div>
+        <div>Caja: <strong id="done-pos-link"></strong>, con el comercio <strong id="done-slug"></strong> y tu clave</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const nameInput = document.getElementById("name");
+    const slugInput = document.getElementById("slug");
+    let slugEditado = false;
+
+    document.getElementById("slug-prefix").innerText = `${window.location.host}/c/`;
+
+    // Misma regla que el servidor: sin tildes, minúsculas, palabras separadas por guiones
+    function generarSlug(texto) {
+      return texto
+        .normalize("NFKD").replace(/[̀-ͯ]/g, "")
+        .toLowerCase().trim()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/[\s_-]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    }
+
+    nameInput.addEventListener("input", () => {
+      if (!slugEditado) slugInput.value = generarSlug(nameInput.value);
+    });
+
+    slugInput.addEventListener("input", () => {
+      slugEditado = slugInput.value.length > 0;
+    });
+
+    // Lee la respuesta aunque el servidor no devuelva JSON (por ejemplo, un error 500)
+    async function leerRespuesta(response) {
+      try {
+        return await response.json();
+      } catch (e) {
+        return {};
+      }
+    }
+
+    async function enviarAlta(event) {
+      event.preventDefault();
+      const errorMsg = document.getElementById("error-msg");
+      const btn = document.getElementById("submit-btn");
+      const password = document.getElementById("password").value;
+      const email = document.getElementById("email").value.trim();
+      const slug = generarSlug(slugInput.value);
+
+      errorMsg.innerText = "";
+      slugInput.value = slug;
+
+      if (password !== document.getElementById("password2").value) {
+        errorMsg.innerText = "Las claves no coinciden";
+        return;
+      }
+
+      btn.disabled = true;
+
+      try {
+        const response = await fetch("/public/businesses/alta", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: nameInput.value.trim(),
+            slug: slug,
+            contact_email: email,
+            password: password
+          })
+        });
+
+        const data = await leerRespuesta(response);
+
+        if (!response.ok) {
+          errorMsg.innerText = (typeof data.detail === "string" && data.detail)
+            || `No pudimos enviar la solicitud (error ${response.status}). Probá de nuevo.`;
+          return;
+        }
+
+        const base = window.location.origin;
+        document.getElementById("done-name").innerText = data.name;
+        document.getElementById("done-email").innerText = email;
+        document.getElementById("done-signup-link").innerText = `${base}/c/${data.slug}`;
+        document.getElementById("done-pos-link").innerText = `${base}/pos`;
+        document.getElementById("done-slug").innerText = data.slug;
+        document.getElementById("signup-form").style.display = "none";
+        document.getElementById("done-panel").style.display = "block";
+      } catch (err) {
+        console.error(err);
+        errorMsg.innerText = "No pudimos conectarnos con el servidor. Probá de nuevo en un rato.";
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

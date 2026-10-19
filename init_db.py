@@ -3,13 +3,13 @@ Script de inicialización de la base de datos.
 Crea todas las tablas requeridas por los modelos ORM si estas aún no existen en el sistema.
 """
 
-from database import engine, Base, SessionLocal
+from database import setup_database, SessionLocal
 import models
 
 def setup():
     # 1. Crear todas las tablas en el archivo sello.db
     print("Creando tablas en la base de datos...")
-    Base.metadata.create_all(bind=engine)
+    setup_database()
 
     # 2. Insertar un comercio de prueba inicial
     db = SessionLocal()

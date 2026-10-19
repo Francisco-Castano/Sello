@@ -4,12 +4,13 @@ Maneja los endpoints de registro, configuración de perfiles de negocios y admin
 """
 
 import re
+import unicodedata
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from database import get_db
 import models
-from auth import require_admin
+from auth import require_admin, hash_password, MIN_PASSWORD_LENGTH
 
 router = APIRouter(
     prefix="/businesses",
@@ -17,7 +18,7 @@ router = APIRouter(
     dependencies=[Depends(require_admin)]
 )
 
-# Datos públicos del comercio, para la página de registro de clientes (/c/{slug})
+# Endpoints públicos: datos del comercio para /c/{slug} y alta de comercios nuevos desde /alta
 public_router = APIRouter(
     prefix="/public/businesses",
     tags=["Comercios (público)"]
@@ -27,10 +28,15 @@ class BusinessCreate(BaseModel):
     name: str = Field(..., example="Pizzería Nápoles")
     slug: str | None = Field(None, example="pizzeria-napoles")
 
+SLUG_PATTERN = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
 def generate_slug(name: str) -> str:
-    slug = name.lower().strip()
-    slug = re.sub(r"[^\w\s-]", "", slug)
-    return re.sub(r"[\s_-]+", "-", slug)
+    # Saca tildes y eñes para que el link sea simple de tipear: "Café Ñandú" -> "cafe-nandu"
+    slug = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    slug = slug.lower().strip()
+    slug = re.sub(r"[^a-z0-9\s-]", "", slug)
+    return re.sub(r"[\s_-]+", "-", slug).strip("-")
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_business(data: BusinessCreate, db: Session = Depends(get_db)):
@@ -68,4 +74,41 @@ def get_public_business(slug: str, db: Session = Depends(get_db)):
     if not business:
         raise HTTPException(status_code=404, detail="Comercio no encontrado")
 
-    return {"name": business.name, "slug": business.slug}
+    return {"name": business.name, "slug": business.slug, "active": business.status == "active"}
+
+
+class BusinessSignup(BaseModel):
+    name: str = Field(..., min_length=2, max_length=80, example="Cafetería Roma")
+    slug: str | None = Field(None, example="cafeteria-roma")
+    contact_email: str = Field(..., example="hola@cafeteriaroma.com")
+    password: str
+
+@public_router.post("/alta", status_code=status.HTTP_201_CREATED)
+def signup_business(data: BusinessSignup, db: Session = Depends(get_db)):
+    """Alta de un comercio nuevo. Queda pendiente hasta que el Super Admin lo apruebe con admin.py."""
+    name = data.name.strip()
+    slug = (data.slug or "").strip().lower() or generate_slug(name)
+    email = data.contact_email.strip().lower()
+
+    if not 3 <= len(slug) <= 40 or not SLUG_PATTERN.match(slug):
+        raise HTTPException(
+            status_code=400,
+            detail="El link tiene que tener entre 3 y 40 caracteres: solo letras, números y guiones"
+        )
+    if not EMAIL_PATTERN.match(email):
+        raise HTTPException(status_code=400, detail="El email no es válido")
+    if len(data.password) < MIN_PASSWORD_LENGTH:
+        raise HTTPException(
+            status_code=400,
+            detail=f"La clave de caja tiene que tener al menos {MIN_PASSWORD_LENGTH} caracteres"
+        )
+    if db.query(models.Business).filter(models.Business.slug == slug).first():
+        raise HTTPException(status_code=409, detail=f"El link '{slug}' ya está en uso, elegí otro")
+
+    business = models.Business(name=name, slug=slug, contact_email=email, status="pending")
+    db.add(business)
+    db.flush()
+    db.add(models.PosCredential(business_id=business.id, password_hash=hash_password(data.password)))
+    db.commit()
+
+    return {"status": "pending", "name": business.name, "slug": business.slug}

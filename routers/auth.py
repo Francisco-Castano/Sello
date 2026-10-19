@@ -31,6 +31,17 @@ def pos_login(data: PosLoginRequest, db: Session = Depends(get_db)):
             detail="Comercio o clave incorrectos"
         )
 
+    if business.status == "pending":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu comercio todavía está pendiente de aprobación"
+        )
+    if business.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu comercio está suspendido"
+        )
+
     return {
         "access_token": create_pos_token(business),
         "token_type": "bearer",

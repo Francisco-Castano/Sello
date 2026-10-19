@@ -154,6 +154,11 @@
         }
 
         const business = await response.json();
+        if (!business.active) {
+          document.getElementById("business-title").innerText = business.name;
+          mostrarMensaje("Este comercio todavía no está habilitado para entregar tarjetas.");
+          return;
+        }
         document.title = `${business.name} - Obtén tu Tarjeta`;
         document.getElementById("business-title").innerText = business.name;
         document.getElementById("page-msg").innerText =

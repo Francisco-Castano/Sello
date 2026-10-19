@@ -274,7 +274,11 @@
         });
 
         if (!res.ok) {
-          errorMsg.innerText = res.status === 401 ? "Comercio o clave incorrectos" : "Error del servidor al ingresar";
+          let detalle = "";
+          try { detalle = (await res.json()).detail; } catch (e) {}
+          if (res.status === 401) errorMsg.innerText = "Comercio o clave incorrectos";
+          else if (res.status === 403 && typeof detalle === "string") errorMsg.innerText = detalle;
+          else errorMsg.innerText = "Error del servidor al ingresar";
           return;
         }
 

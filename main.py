@@ -7,10 +7,10 @@ Configura la app, los middlewares, las rutas generales y los routers del sistema
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from database import engine, Base
+from database import setup_database
 from routers import auth, businesses, passes
 
-Base.metadata.create_all(bind=engine)
+setup_database()
 
 app = FastAPI(title="Sello API - Plataforma de Fidelidad")
 
@@ -36,6 +36,11 @@ def read_root():
 @app.get("/c/{slug}")
 def read_business_signup(slug: str):
     return html_page("static/index.html")
+
+# Alta de comercios nuevos (quedan pendientes hasta que el Super Admin los apruebe)
+@app.get("/alta")
+def read_business_onboarding():
+    return html_page("static/alta.html")
 
 # Ruta del comerciante / POS (Lector QR y carga de puntos)
 @app.get("/pos")

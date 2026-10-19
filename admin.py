@@ -4,24 +4,52 @@ Permite crear comercios y definir la clave de caja (/pos) de cada uno sin expone
 
 Uso:
     python admin.py comercios
+    python admin.py pendientes
+    python admin.py aprobar <slug>
+    python admin.py suspender <slug>
     python admin.py crear-comercio "Cafetería Roma" [slug]
     python admin.py clave-pos <slug>
 """
 
 import getpass
 import sys
-from database import engine, Base, SessionLocal
+from database import setup_database, SessionLocal
 import models
-from auth import hash_password
+from auth import hash_password, MIN_PASSWORD_LENGTH
 from routers.businesses import generate_slug
 
-MIN_PASSWORD_LENGTH = 8
+
+STATUS_LABELS = {"pending": "PENDIENTE", "active": "activo", "suspended": "SUSPENDIDO"}
 
 
-def list_businesses(db):
-    for b in db.query(models.Business).order_by(models.Business.created_at).all():
+def list_businesses(db, only_status: str | None = None):
+    query = db.query(models.Business).order_by(models.Business.created_at)
+    if only_status:
+        query = query.filter(models.Business.status == only_status)
+
+    businesses = query.all()
+    if not businesses:
+        print("No hay comercios" + (" pendientes" if only_status == "pending" else ""))
+    for b in businesses:
         has_password = "con clave" if b.pos_credential else "SIN clave"
-        print(f"- {b.slug:<25} {b.name}  ({has_password})  registro: /c/{b.slug}")
+        status_label = STATUS_LABELS.get(b.status, b.status)
+        email = b.contact_email or "sin email"
+        print(f"- {b.slug:<25} {b.name}  [{status_label}]  ({has_password}, {email})  registro: /c/{b.slug}")
+
+
+def set_status(db, slug: str, new_status: str):
+    business = db.query(models.Business).filter(models.Business.slug == slug).first()
+    if not business:
+        sys.exit(f"No existe el comercio '{slug}'. Mirá la lista con: python admin.py comercios")
+
+    business.status = new_status
+    db.commit()
+    print(f"{business.name} ahora está {STATUS_LABELS[new_status]}.")
+    if new_status == "active":
+        if business.contact_email:
+            print(f"Avisale a {business.contact_email} que ya puede usar /pos y compartir /c/{business.slug}")
+        if not business.pos_credential:
+            print(f"Ojo: no tiene clave de caja. Definila con: python admin.py clave-pos {business.slug}")
 
 
 def create_business(db, name: str, slug: str | None):
@@ -56,12 +84,18 @@ def set_pos_password(db, slug: str):
 
 
 def main():
-    Base.metadata.create_all(bind=engine)
+    setup_database()
     args = sys.argv[1:]
     db = SessionLocal()
     try:
         if args == ["comercios"]:
             list_businesses(db)
+        elif args == ["pendientes"]:
+            list_businesses(db, only_status="pending")
+        elif len(args) == 2 and args[0] == "aprobar":
+            set_status(db, args[1], "active")
+        elif len(args) == 2 and args[0] == "suspender":
+            set_status(db, args[1], "suspended")
         elif len(args) in (2, 3) and args[0] == "crear-comercio":
             create_business(db, args[1], args[2] if len(args) == 3 else None)
         elif len(args) == 2 and args[0] == "clave-pos":

@@ -20,6 +20,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SECRET_KEY_PATH = os.path.join(BASE_DIR, ".secret_key")
 
 TOKEN_ALGORITHM = "HS256"
+MIN_PASSWORD_LENGTH = 8
 TOKEN_DURATION_SECONDS = 12 * 60 * 60  # Un turno de caja
 
 
@@ -107,7 +108,8 @@ def get_current_business(
         raise unauthorized
 
     business = db.query(models.Business).filter(models.Business.id == payload.get("sub")).first()
-    if not business or not business.pos_credential:
+    # Un comercio pendiente o suspendido no puede operar aunque tenga una sesión abierta
+    if not business or not business.pos_credential or business.status != "active":
         raise unauthorized
 
     if payload.get("ver") != _credential_version(business.pos_credential):
