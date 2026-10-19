@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sello - Obtén tu Tarjeta</title>
+  <script src="/static/card-editor.js"></script>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -47,6 +48,23 @@
     }
     input:focus {
       border-color: #2563eb;
+    }
+    #business-logo {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin: 0 auto 14px;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+    #business-reward {
+      display: none;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin: -8px 0 20px;
     }
     button.btn-submit {
       width: 100%;
@@ -95,10 +113,12 @@
 </head>
 <body>
   <div class="card">
+    <img id="business-logo" alt="" />
     <h1 id="business-title">Sello Club</h1>
     <p id="page-msg">Cargando...</p>
 
     <div id="signup-form">
+      <div id="business-reward"></div>
       <input type="text" id="userName" placeholder="Tu nombre completo" required />
       <input type="tel" id="userPhone" placeholder="Tu teléfono (opcional)" />
 
@@ -136,6 +156,30 @@
       }
     }
 
+    // Usa el color, logo y premio del comercio para que la página se parezca a su tarjeta
+    function aplicarMarca(business) {
+      const color = business.brand_color;
+      const btn = document.getElementById("generateBtn");
+      btn.style.backgroundColor = color;
+      btn.style.color = SelloCardEditor.textColorFor(color);
+
+      if (business.logo_url) {
+        const logo = document.getElementById("business-logo");
+        logo.src = business.logo_url;
+        logo.alt = `Logo de ${business.name}`;
+        logo.style.display = "block";
+      }
+
+      if (business.reward_text) {
+        const reward = document.getElementById("business-reward");
+        reward.innerText = `🎁 ${business.reward_text}`;
+        reward.style.backgroundColor = color + "14";
+        // Con colores claros el texto del color no se leería sobre fondo blanco
+        reward.style.color = SelloCardEditor.textColorFor(color) === "#ffffff" ? color : "#374151";
+        reward.style.display = "block";
+      }
+    }
+
     async function cargarComercio() {
       if (!businessSlug) {
         mostrarMensaje("Para obtener tu tarjeta, usá el link que te dio el comercio.");
@@ -160,6 +204,7 @@
           return;
         }
         document.title = `${business.name} - Obtén tu Tarjeta`;
+        aplicarMarca(business);
         document.getElementById("business-title").innerText = business.name;
         document.getElementById("page-msg").innerText =
           "Ingresa tus datos para generar tu tarjeta digital y sumarte al programa de beneficios.";

@@ -25,6 +25,8 @@ ADDED_COLUMNS = {
     "businesses": {
         "status": "VARCHAR NOT NULL DEFAULT 'active'",
         "contact_email": "VARCHAR",
+        "brand_color": "VARCHAR",
+        "reward_text": "VARCHAR",
     },
 }
 

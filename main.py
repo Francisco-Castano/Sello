@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from database import setup_database
-from routers import auth, businesses, passes
+from routers import auth, branding, businesses, passes
 
 setup_database()
 
@@ -20,9 +20,17 @@ app.include_router(auth.router)
 app.include_router(businesses.router)
 app.include_router(businesses.public_router)
 app.include_router(passes.router)
+app.include_router(branding.router)
 
 # Las páginas se revalidan en cada visita para que nadie quede usando una versión vieja
 NO_CACHE_HEADERS = {"Cache-Control": "no-cache"}
+
+@app.middleware("http")
+async def revalidate_static_files(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
 
 def html_page(path: str) -> FileResponse:
     return FileResponse(path, headers=NO_CACHE_HEADERS)

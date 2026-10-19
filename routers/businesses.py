@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 import models
 from auth import require_admin, hash_password, MIN_PASSWORD_LENGTH
+from branding import BrandingError, branding_info, clean_color, clean_reward_text, set_image
 
 router = APIRouter(
     prefix="/businesses",
@@ -74,7 +75,12 @@ def get_public_business(slug: str, db: Session = Depends(get_db)):
     if not business:
         raise HTTPException(status_code=404, detail="Comercio no encontrado")
 
-    return {"name": business.name, "slug": business.slug, "active": business.status == "active"}
+    return {
+        "name": business.name,
+        "slug": business.slug,
+        "active": business.status == "active",
+        **branding_info(business)
+    }
 
 
 class BusinessSignup(BaseModel):
@@ -82,6 +88,11 @@ class BusinessSignup(BaseModel):
     slug: str | None = Field(None, example="cafeteria-roma")
     contact_email: str = Field(..., example="hola@cafeteriaroma.com")
     password: str
+    # Personalización de la tarjeta (opcional; se puede cambiar después desde la caja)
+    brand_color: str | None = Field(None, example="#1E3A8A")
+    reward_text: str | None = Field(None, example="Juntá 100 puntos y llevate un café")
+    logo: str | None = Field(None, description="Imagen PNG o JPG como data URL")
+    hero: str | None = Field(None, description="Imagen PNG o JPG como data URL")
 
 @public_router.post("/alta", status_code=status.HTTP_201_CREATED)
 def signup_business(data: BusinessSignup, db: Session = Depends(get_db)):
@@ -106,6 +117,16 @@ def signup_business(data: BusinessSignup, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail=f"El link '{slug}' ya está en uso, elegí otro")
 
     business = models.Business(name=name, slug=slug, contact_email=email, status="pending")
+    try:
+        business.brand_color = clean_color(data.brand_color)
+        business.reward_text = clean_reward_text(data.reward_text)
+        if data.logo:
+            set_image(business, "logo", data.logo)
+        if data.hero:
+            set_image(business, "hero", data.hero)
+    except BrandingError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     db.add(business)
     db.flush()
     db.add(models.PosCredential(business_id=business.id, password_hash=hash_password(data.password)))

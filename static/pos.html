@@ -6,6 +6,7 @@
   <title>Sello POS - Terminal de Caja</title>
   <!-- Librería ligera y confiable para lectura de QR vía cámara web/móvil -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="/static/card-editor.js"></script>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -146,6 +147,41 @@
       margin-top: 10px;
       text-align: center;
     }
+    .session-actions {
+      display: flex;
+      gap: 16px;
+    }
+    :root {
+      --ed-text: #e2e8f0;
+      --ed-muted: #94a3b8;
+      --ed-border: #475569;
+      --ed-input-bg: #0f172a;
+      --ed-bg: #1e293b;
+    }
+    #branding-panel h2 {
+      font-size: 18px;
+      margin: 0 0 4px;
+    }
+    #branding-panel .panel-intro {
+      font-size: 13px;
+      color: #94a3b8;
+      margin: 0 0 18px;
+    }
+    .notice {
+      font-size: 13px;
+      color: #fbbf24;
+      background: rgba(251, 191, 36, 0.08);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 18px;
+    }
+    #branding-status {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 500;
+    }
     #status-msg {
       margin-top: 12px;
       text-align: center;
@@ -176,7 +212,21 @@
     <!-- Comercio logueado -->
     <div class="session-bar" id="session-bar">
       <span id="session-business">Comercio</span>
-      <button class="link-btn" onclick="cerrarSesion()">Cerrar caja</button>
+      <div class="session-actions">
+        <button class="link-btn" id="branding-btn" onclick="abrirMiTarjeta()">Mi tarjeta</button>
+        <button class="link-btn" onclick="cerrarSesion()">Cerrar caja</button>
+      </div>
+    </div>
+
+    <!-- Personalización de la tarjeta del comercio -->
+    <div id="branding-panel" class="card-panel">
+      <h2>Mi tarjeta</h2>
+      <p class="panel-intro">Cambiá cómo ven tus clientes la tarjeta en su celular. Al guardar, también se actualizan las tarjetas que ya entregaste.</p>
+      <div class="notice" id="branding-notice" hidden>El logo y la portada se guardan, pero se van a ver en Wallet recién cuando Sello esté publicado en internet. El color y el premio ya se ven.</div>
+      <div id="branding-editor"></div>
+      <button class="btn-action" id="branding-save-btn" onclick="guardarMiTarjeta()">Guardar cambios</button>
+      <button class="btn-action btn-secondary" onclick="cerrarMiTarjeta()">Volver a la caja</button>
+      <div id="branding-status"></div>
     </div>
 
     <!-- Visor de la cámara -->
@@ -240,6 +290,7 @@
       borrar(TOKEN_KEY);
       document.getElementById("reader").style.display = "none";
       document.getElementById("card-panel").style.display = "none";
+      document.getElementById("branding-panel").style.display = "none";
       document.getElementById("session-bar").style.display = "none";
       document.getElementById("subtitle").innerText = "Ingresá con la clave de caja del comercio";
       document.getElementById("login-panel").style.display = "block";
@@ -297,6 +348,83 @@
 
     function cerrarSesion() {
       mostrarLogin();
+    }
+
+    // --- Mi tarjeta ---
+    let brandingEditor = null;
+
+    async function abrirMiTarjeta() {
+      const status = document.getElementById("branding-status");
+      await detenerCamara();
+      document.getElementById("reader").style.display = "none";
+      document.getElementById("card-panel").style.display = "none";
+      status.innerText = "";
+
+      try {
+        const res = await fetch("/branding", { headers: authHeaders() });
+        if (res.status === 401) {
+          mostrarLogin("La sesión venció. Volvé a ingresar.");
+          return;
+        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        brandingEditor = SelloCardEditor.create(document.getElementById("branding-editor"), data);
+        document.getElementById("branding-notice").hidden = data.images_visible_in_wallet;
+        document.getElementById("subtitle").innerText = "Personalizá la tarjeta de tu comercio";
+        document.getElementById("branding-panel").style.display = "block";
+      } catch (err) {
+        console.error(err);
+        alert("No se pudo cargar la tarjeta del comercio.");
+        cerrarMiTarjeta();
+      }
+    }
+
+    async function guardarMiTarjeta() {
+      const status = document.getElementById("branding-status");
+      const btn = document.getElementById("branding-save-btn");
+      btn.disabled = true;
+      status.style.color = "#94a3b8";
+      status.innerText = "Guardando...";
+
+      try {
+        const res = await fetch("/branding", {
+          method: "PUT",
+          headers: authHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify(brandingEditor.getValues())
+        });
+        if (res.status === 401) {
+          mostrarLogin("La sesión venció. Volvé a ingresar.");
+          return;
+        }
+
+        let data = {};
+        try { data = await res.json(); } catch (e) {}
+
+        if (!res.ok) {
+          status.style.color = "#f87171";
+          status.innerText = (typeof data.detail === "string" && data.detail) || "No se pudo guardar la tarjeta.";
+          return;
+        }
+
+        brandingEditor = SelloCardEditor.create(document.getElementById("branding-editor"), data);
+        status.style.color = "#4ade80";
+        status.innerText = data.passes_to_update
+          ? `¡Guardado! Estamos actualizando las ${data.passes_to_update} tarjetas de tus clientes.`
+          : "¡Guardado! Las próximas tarjetas van a salir con este diseño.";
+      } catch (err) {
+        console.error(err);
+        status.style.color = "#f87171";
+        status.innerText = "Error de red con el servidor.";
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function cerrarMiTarjeta() {
+      document.getElementById("branding-panel").style.display = "none";
+      document.getElementById("subtitle").innerText = "Escanea la tarjeta del cliente para acreditar puntos";
+      reiniciarEscaneo();
     }
 
     async function detenerCamara() {

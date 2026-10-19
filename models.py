@@ -5,7 +5,7 @@ Estructura las tablas de la base de datos (comercios, usuarios, pases/tarjetas) 
 
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, JSON, LargeBinary
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -18,11 +18,32 @@ class Business(Base):
     slug = Column(String, unique=True, index=True, nullable=False) # Ej: cafeteria-roma (para su link)
     status = Column(String, nullable=False, default="active", server_default="active")  # pending, active, suspended
     contact_email = Column(String, nullable=True)             # Para avisarle cuando se aprueba el alta
+    brand_color = Column(String, nullable=True)               # Color de fondo de la tarjeta, ej: #1E3A8A
+    reward_text = Column(String, nullable=True)               # Ej: Juntá 100 puntos y llevate un café
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relaciones
     passes = relationship("Pass", back_populates="business")
     pos_credential = relationship("PosCredential", back_populates="business", uselist=False)
+    images = relationship("BusinessImage", back_populates="business", cascade="all, delete-orphan")
+
+    def get_image(self, kind: str):
+        return next((img for img in self.images if img.kind == kind), None)
+
+
+class BusinessImage(Base):
+    """Logo o imagen de portada de la tarjeta del comercio.
+    Se guarda en la base (no en disco) para que no se pierda al publicar el servidor."""
+    __tablename__ = "business_images"
+
+    business_id = Column(String, ForeignKey("businesses.id"), primary_key=True)
+    kind = Column(String, primary_key=True)        # logo, hero
+    content = Column(LargeBinary, nullable=False)
+    content_type = Column(String, nullable=False)  # image/png, image/jpeg
+    sha256 = Column(String, nullable=False)        # Versión de la imagen, para que Google y los navegadores no usen una vieja
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    business = relationship("Business", back_populates="images")
 
 
 class PosCredential(Base):

@@ -9,7 +9,9 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database import get_db
 import models
-from GoogleWallet import MI_ISSUER_ID, generate_google_wallet_url, update_google_wallet_balance
+from GoogleWallet import MI_ISSUER_ID, generate_google_wallet_url, update_google_wallet_pass
+from branding import card_design
+from names import format_person_name
 from auth import get_current_business
 
 router = APIRouter(
@@ -31,6 +33,9 @@ def create_pass(data: UserRegisterRequest, db: Session = Depends(get_db)):
     business = db.query(models.Business).filter(models.Business.slug == data.business_slug).first()
     if not business:
         raise HTTPException(status_code=404, detail="Comercio no encontrado")
+    name = format_person_name(data.name)
+    if not name:
+        raise HTTPException(status_code=400, detail="Ingresá tu nombre")
     if business.status != "active":
         raise HTTPException(status_code=403, detail="Este comercio todavía no está habilitado")
 
@@ -39,7 +44,7 @@ def create_pass(data: UserRegisterRequest, db: Session = Depends(get_db)):
         user = db.query(models.User).filter(models.User.phone == data.phone).first()
 
     if not user:
-        user = models.User(name=data.name, phone=data.phone)
+        user = models.User(name=name, phone=data.phone)
         db.add(user)
         db.commit()
         db.refresh(user)
@@ -52,7 +57,8 @@ def create_pass(data: UserRegisterRequest, db: Session = Depends(get_db)):
         wallet_url = generate_google_wallet_url(
             issuer_id=MI_ISSUER_ID,
             pass_id=unique_pass_id,
-            user_name=user.name
+            user_name=user.name,
+            design=card_design(business)
         )
     except Exception as e:
         print(f"[GoogleWallet] No se pudo firmar el pase: {e!r}")
@@ -75,7 +81,7 @@ def create_pass(data: UserRegisterRequest, db: Session = Depends(get_db)):
     return {
         "status": "ok",
         "business": business.name,
-        "client_name": user.name,
+        "client_name": format_person_name(user.name),
         "pass_id": new_pass.id,
         "balance": new_pass.balance,
         "wallet_url": wallet_url
@@ -101,7 +107,7 @@ def get_pass_info(
 
     return {
         "pass_id": pass_obj.id,
-        "client_name": pass_obj.user.name,
+        "client_name": format_person_name(pass_obj.user.name),
         "business": pass_obj.business.name,
         "balance": pass_obj.balance,
         "status": pass_obj.status
@@ -136,11 +142,12 @@ def add_points(
     db.refresh(pass_obj)
 
     # 3. Sincronizar en vivo con Google Wallet
-    push_success = update_google_wallet_balance(
+    push_success = update_google_wallet_pass(
         issuer_id=MI_ISSUER_ID,
         pass_id=pass_obj.id,
-        new_balance=pass_obj.balance,
-        points_added=data.points
+        design=card_design(business),
+        user_name=pass_obj.user.name,
+        balance=pass_obj.balance
     )
 
     return {

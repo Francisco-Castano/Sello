@@ -9,6 +9,7 @@ Uso:
     python admin.py suspender <slug>
     python admin.py crear-comercio "Cafetería Roma" [slug]
     python admin.py clave-pos <slug>
+    python admin.py plantilla-wallet
 """
 
 import getpass
@@ -16,6 +17,7 @@ import sys
 from database import setup_database, SessionLocal
 import models
 from auth import hash_password, MIN_PASSWORD_LENGTH
+from GoogleWallet import MI_ISSUER_ID, apply_class_template
 from routers.businesses import generate_slug
 
 
@@ -98,6 +100,8 @@ def main():
             set_status(db, args[1], "suspended")
         elif len(args) in (2, 3) and args[0] == "crear-comercio":
             create_business(db, args[1], args[2] if len(args) == 3 else None)
+        elif args == ["plantilla-wallet"]:
+            print(apply_class_template(MI_ISSUER_ID))
         elif len(args) == 2 and args[0] == "clave-pos":
             set_pos_password(db, args[1])
         else:

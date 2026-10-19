@@ -4,7 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sello - Sumá tu comercio</title>
+  <script src="/static/card-editor.js"></script>
   <style>
+    :root {
+      --ed-text: #374151;
+      --ed-muted: #6b7280;
+      --ed-border: #d1d5db;
+      --ed-input-bg: #ffffff;
+      --ed-bg: #ffffff;
+    }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: #f4f6f9;
@@ -22,7 +30,20 @@
       border-radius: 16px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
       width: 100%;
-      max-width: 420px;
+      max-width: 460px;
+    }
+    .section-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #111827;
+      margin: 28px 0 4px;
+      padding-top: 24px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .section-intro {
+      font-size: 13px;
+      color: #6b7280;
+      margin: 0 0 16px;
     }
     h1 {
       margin: 0 0 8px;
@@ -170,6 +191,10 @@
         <input type="password" id="password2" minlength="8" autocomplete="new-password" required />
       </div>
 
+      <div class="section-title">Tu tarjeta</div>
+      <p class="section-intro">Así la van a ver tus clientes en su celular. Podés cambiarla cuando quieras desde la caja.</p>
+      <div id="card-editor"></div>
+
       <button class="btn-submit" id="submit-btn" type="submit">Enviar solicitud</button>
       <div id="error-msg"></div>
     </form>
@@ -188,6 +213,7 @@
     const nameInput = document.getElementById("name");
     const slugInput = document.getElementById("slug");
     let slugEditado = false;
+    const cardEditor = SelloCardEditor.create(document.getElementById("card-editor"));
 
     document.getElementById("slug-prefix").innerText = `${window.location.host}/c/`;
 
@@ -203,6 +229,7 @@
 
     nameInput.addEventListener("input", () => {
       if (!slugEditado) slugInput.value = generarSlug(nameInput.value);
+      cardEditor.setName(nameInput.value.trim() || "Tu comercio");
     });
 
     slugInput.addEventListener("input", () => {
@@ -235,6 +262,7 @@
       }
 
       btn.disabled = true;
+      const tarjeta = cardEditor.getValues();
 
       try {
         const response = await fetch("/public/businesses/alta", {
@@ -244,7 +272,11 @@
             name: nameInput.value.trim(),
             slug: slug,
             contact_email: email,
-            password: password
+            password: password,
+            brand_color: tarjeta.brand_color,
+            reward_text: tarjeta.reward_text,
+            logo: tarjeta.logo,
+            hero: tarjeta.hero
           })
         });
 
