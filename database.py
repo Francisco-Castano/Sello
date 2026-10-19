@@ -3,17 +3,18 @@ Configuración de la base de datos y la sesión.
 Establece la conexión con SQLite (sello.db) y provee la dependencia de sesión para SQLAlchemy.
 """
 
+import os
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-# Base de datos local para desarrollo
-SQLALCHEMY_DATABASE_URL = "sqlite:///./sello.db"
+# Por defecto, la base local de desarrollo. En el servidor (o en las pruebas) se cambia con SELLO_DATABASE_URL.
+SQLALCHEMY_DATABASE_URL = os.environ.get("SELLO_DATABASE_URL", "sqlite:///./sello.db")
 
 # Para SQLite necesitamos check_same_thread=False en FastAPI
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, 
-    connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {}
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
