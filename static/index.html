@@ -36,6 +36,79 @@
       font-size: 14px;
       margin-bottom: 24px;
     }
+    .field {
+      text-align: left;
+      margin-bottom: 16px;
+    }
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+    .field .optional {
+      font-weight: 400;
+      color: #9ca3af;
+    }
+    .field input {
+      margin-bottom: 0;
+    }
+    .hint {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 6px;
+    }
+    .birthday {
+      display: flex;
+      gap: 8px;
+    }
+    .birthday select {
+      min-width: 0;
+      padding: 12px 8px;
+    }
+    .birthday #birthMonth {
+      flex: 1.6;
+    }
+    .birthday #birthYear {
+      flex: 1.2;
+    }
+    select {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 16px;
+      background: #ffffff;
+      color: #111827;
+      outline: none;
+    }
+    select:focus {
+      border-color: #2563eb;
+    }
+    .check {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      text-align: left;
+      font-size: 14px;
+      color: #374151;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+    .check input {
+      width: 18px;
+      height: 18px;
+      margin: 2px 0 0;
+      flex-shrink: 0;
+      accent-color: #111827;
+    }
+    .check a {
+      color: inherit;
+    }
+    .checks {
+      margin: 20px 0 18px;
+    }
     input {
       width: 100%;
       padding: 12px;
@@ -119,8 +192,44 @@
 
     <div id="signup-form">
       <div id="business-reward"></div>
-      <input type="text" id="userName" placeholder="Tu nombre completo" required />
-      <input type="tel" id="userPhone" placeholder="Tu teléfono (opcional)" />
+
+      <div class="field">
+        <label for="userName">Nombre y apellido</label>
+        <input type="text" id="userName" placeholder="Ej: Ana García" autocomplete="name" required />
+      </div>
+
+      <div class="field">
+        <label for="userPhone">Teléfono</label>
+        <input type="tel" id="userPhone" placeholder="Ej: 11 2345 6789" autocomplete="tel" inputmode="tel" required />
+        <div class="hint">Con código de área. Lo usamos para identificarte si cambiás de celular.</div>
+      </div>
+
+      <div class="field">
+        <label for="birthDay">Fecha de nacimiento <span class="optional">(opcional)</span></label>
+        <div class="birthday">
+          <select id="birthDay" aria-label="Día de nacimiento">
+            <option value="">Día</option>
+          </select>
+          <select id="birthMonth" aria-label="Mes de nacimiento">
+            <option value="">Mes</option>
+          </select>
+          <select id="birthYear" aria-label="Año de nacimiento">
+            <option value="">Año</option>
+          </select>
+        </div>
+        <div class="hint">Para que el comercio pueda darte un regalo en tu cumpleaños.</div>
+      </div>
+
+      <div class="checks">
+        <label class="check">
+          <input type="checkbox" id="acceptPrivacy" />
+          <span>Acepto la <a href="/privacidad" target="_blank">política de privacidad</a>.</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="marketingOptIn" />
+          <span id="marketing-label">Quiero recibir novedades y promociones de este comercio.</span>
+        </label>
+      </div>
 
       <button class="btn-submit" id="generateBtn" onclick="crearPase()">Generar mi Tarjeta</button>
 
@@ -129,7 +238,7 @@
     </div>
 
     <div id="wallet-container">
-      <p style="margin-bottom: 12px; font-weight: 500;">¡Tu tarjeta está lista!</p>
+      <p id="wallet-msg" style="margin-bottom: 12px; font-weight: 500;">¡Tu tarjeta está lista!</p>
       <a id="walletLink" href="#" target="_blank" class="wallet-button">
         <!-- Botón oficial estilizado de Google Wallet -->
         <img src="https://toolbox.googlepay.com/create/images/es-419_add_to_google_wallet_wallet-button.svg" alt="Añadir a Google Wallet" />
@@ -141,6 +250,17 @@
     // El comercio sale del link: /c/{slug}
     const pathMatch = window.location.pathname.match(/^\/c\/([^\/]+)\/?$/);
     const businessSlug = pathMatch ? decodeURIComponent(pathMatch[1]) : null;
+
+    const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio",
+                   "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    (function cargarFechas() {
+      const dia = document.getElementById("birthDay");
+      for (let d = 1; d <= 31; d++) dia.add(new Option(String(d), String(d)));
+      const mes = document.getElementById("birthMonth");
+      MESES.forEach((nombre, i) => mes.add(new Option(nombre, String(i + 1))));
+      const anio = document.getElementById("birthYear");
+      for (let a = new Date().getFullYear(); a >= 1900; a--) anio.add(new Option(String(a), String(a)));
+    })();
 
     function mostrarMensaje(texto) {
       document.getElementById("page-msg").innerText = texto;
@@ -206,6 +326,8 @@
         document.title = `${business.name} - Obtén tu Tarjeta`;
         aplicarMarca(business);
         document.getElementById("business-title").innerText = business.name;
+        document.getElementById("marketing-label").innerText =
+          `Quiero recibir novedades y promociones de ${business.name}.`;
         document.getElementById("page-msg").innerText =
           "Ingresa tus datos para generar tu tarjeta digital y sumarte al programa de beneficios.";
         document.getElementById("signup-form").style.display = "block";
@@ -218,6 +340,11 @@
     async function crearPase() {
       const name = document.getElementById("userName").value.trim();
       const phone = document.getElementById("userPhone").value.trim();
+      const birthDay = document.getElementById("birthDay").value;
+      const birthMonth = document.getElementById("birthMonth").value;
+      const birthYear = document.getElementById("birthYear").value;
+      const acceptPrivacy = document.getElementById("acceptPrivacy").checked;
+      const marketingOptIn = document.getElementById("marketingOptIn").checked;
       const loader = document.getElementById("loader");
       const errorMsg = document.getElementById("error-msg");
       const walletContainer = document.getElementById("wallet-container");
@@ -225,7 +352,20 @@
       const generateBtn = document.getElementById("generateBtn");
 
       if (!name) {
-        errorMsg.innerText = "Por favor ingresa tu nombre";
+        errorMsg.innerText = "Por favor ingresá tu nombre";
+        return;
+      }
+      if (phone.replace(/\D/g, "").length < 8) {
+        errorMsg.innerText = "Ingresá tu teléfono con código de área";
+        return;
+      }
+      const fechaCompleta = [birthDay, birthMonth, birthYear].filter(Boolean).length;
+      if (fechaCompleta !== 0 && fechaCompleta !== 3) {
+        errorMsg.innerText = "Completá el día, el mes y el año de tu nacimiento, o dejalos vacíos";
+        return;
+      }
+      if (!acceptPrivacy) {
+        errorMsg.innerText = "Para obtener tu tarjeta tenés que aceptar la política de privacidad";
         return;
       }
 
@@ -238,13 +378,25 @@
         const response = await fetch("/passes/crear-google", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: name, phone: phone || "N/A", business_slug: businessSlug }),
+          body: JSON.stringify({
+            name: name,
+            phone: phone,
+            business_slug: businessSlug,
+            birthday_day: birthDay ? Number(birthDay) : null,
+            birthday_month: birthMonth ? Number(birthMonth) : null,
+            birthday_year: birthYear ? Number(birthYear) : null,
+            accept_privacy: acceptPrivacy,
+            marketing_opt_in: marketingOptIn
+          }),
         });
 
         const data = await leerRespuesta(response);
 
         if (response.ok && data.wallet_url) {
           walletLink.href = data.wallet_url;
+          document.getElementById("wallet-msg").innerText = data.existing
+            ? `¡Ya tenías tu tarjeta, ${data.client_name}! Tenés ${data.balance} pts. Si la borraste, podés volver a guardarla.`
+            : "¡Tu tarjeta está lista!";
           walletContainer.style.display = "block";
         } else {
           errorMsg.innerText = (typeof data.detail === "string" && data.detail) || `No pudimos generar tu tarjeta (error ${response.status}). Avisale al comercio.`;

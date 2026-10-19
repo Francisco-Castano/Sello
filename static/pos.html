@@ -147,6 +147,22 @@
       margin-top: 10px;
       text-align: center;
     }
+    .birthday-alert {
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.45);
+      color: #fcd34d;
+      font-weight: 700;
+      font-size: 15px;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .birthday-date {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
     .session-actions {
       display: flex;
       gap: 16px;
@@ -235,8 +251,10 @@
     <!-- Panel de control de puntos tras escanear -->
     <div id="card-panel" class="card-panel">
       <span class="badge" id="business-badge">Comercio</span>
+      <div class="birthday-alert" id="birthday-alert" hidden>🎂 ¡Hoy es su cumpleaños!</div>
       <div class="user-info">
         <div class="user-name" id="client-name">Cliente</div>
+        <div class="birthday-date" id="client-birthday" hidden></div>
         <div style="font-size: 12px; color: #94a3b8;" id="pass-id-label">ID: ...</div>
       </div>
 
@@ -472,6 +490,18 @@
 
         const data = await res.json();
         document.getElementById("client-name").innerText = data.client_name;
+        const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+                       "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+        const cumple = document.getElementById("client-birthday");
+        if (data.birthday) {
+          const [mes, dia] = data.birthday.split("-").map(Number);
+          const edad = data.age !== null ? ` (${data.age} años)` : "";
+          cumple.innerText = `Cumpleaños: ${dia} de ${meses[mes - 1]}${edad}`;
+        }
+        cumple.hidden = !data.birthday;
+        const alerta = document.getElementById("birthday-alert");
+        alerta.innerText = data.age !== null ? `🎂 ¡Hoy cumple ${data.age} años!` : "🎂 ¡Hoy es su cumpleaños!";
+        alerta.hidden = !data.birthday_today;
         document.getElementById("pass-id-label").innerText = `ID: ${data.pass_id}`;
         document.getElementById("business-badge").innerText = data.business;
         document.getElementById("client-balance").innerText = `${data.balance} pts`;

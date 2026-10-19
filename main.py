@@ -51,6 +51,11 @@ def read_business_signup(slug: str):
 def read_business_onboarding():
     return html_page("static/alta.html")
 
+# Política de privacidad que aceptan los clientes al registrarse
+@app.get("/privacidad")
+def read_privacy_policy():
+    return html_page("static/privacidad.html")
+
 # Ruta del comerciante / POS (Lector QR y carga de puntos)
 @app.get("/pos")
 def read_pos():

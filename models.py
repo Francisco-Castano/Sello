@@ -5,7 +5,7 @@ Estructura las tablas de la base de datos (comercios, usuarios, pases/tarjetas) 
 
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, JSON, LargeBinary
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, JSON, LargeBinary, Boolean
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -64,7 +64,9 @@ class User(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String, nullable=False)
-    phone = Column(String, index=True, nullable=True)
+    phone = Column(String, index=True, nullable=True)   # Solo dígitos; identifica al cliente entre comercios
+    birthday = Column(String, nullable=True)             # "MM-DD", para encontrar rápido los cumpleaños del día
+    birth_year = Column(Integer, nullable=True)          # Año de nacimiento, para saber la edad
     created_at = Column(DateTime, default=datetime.utcnow)
 
     passes = relationship("Pass", back_populates="user")
@@ -83,6 +85,10 @@ class Pass(Base):
     balance = Column(Integer, default=0)            # Saldo actual de puntos/sellos
     status = Column(String, default="active")       # active, suspended
     extra_data = Column(JSON, default=dict)         # Metadatos flexibles para Google/Apple
+    # Consentimientos del cliente con este comercio
+    privacy_accepted_at = Column(DateTime, nullable=True)
+    privacy_version = Column(String, nullable=True)     # Versión de la política que aceptó
+    marketing_opt_in = Column(Boolean, nullable=False, default=False, server_default="0")
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relaciones

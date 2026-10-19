@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sello - Política de privacidad</title>
+  <!--
+    BORRADOR. Antes de publicar:
+    1. Completar todo lo que está entre [corchetes] (razón social, CUIT, domicilio, email, plazos, edad mínima).
+    2. Hacerlo revisar por un abogado.
+    3. Sacar el aviso de borrador y cambiar PRIVACY_VERSION en routers/passes.py.
+    4. Inscribir la base de datos en el Registro Nacional de Bases de Datos de la AAIP.
+  -->
+  <style>
+    :root {
+      --paper: #fbf7f0;
+      --card: #ffffff;
+      --ink: #14182b;
+      --ink-soft: #4a5068;
+      --line: #e6dfd2;
+      --brand: #1e3a8a;
+      --stamp: #e4572e;
+      --stamp-tint: #fde9e2;
+      --placeholder: #fff4cc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.65;
+      font-size: 16px;
+    }
+    .wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 32px 16px 64px;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 700;
+      font-size: 22px;
+      margin-bottom: 24px;
+    }
+    .logo span {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2.5px solid var(--stamp);
+      color: var(--stamp);
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      transform: rotate(-12deg);
+    }
+    .draft {
+      background: var(--stamp-tint);
+      border: 1px solid var(--stamp);
+      color: #7c2d12;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+    article {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 32px 28px;
+    }
+    h1 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(28px, 4vw, 36px);
+      line-height: 1.2;
+      margin: 0 0 8px;
+    }
+    .meta {
+      color: var(--ink-soft);
+      font-size: 14px;
+      margin: 0 0 24px;
+    }
+    h2 {
+      font-size: 19px;
+      margin: 32px 0 8px;
+      color: var(--brand);
+    }
+    p, li { color: var(--ink-soft); }
+    ul { padding-left: 22px; }
+    li { margin-bottom: 6px; }
+    strong { color: var(--ink); }
+    mark {
+      background: var(--placeholder);
+      color: var(--ink);
+      padding: 0 4px;
+      border-radius: 4px;
+    }
+    .legal-box {
+      border-left: 3px solid var(--brand);
+      background: #f4f6fb;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      font-size: 14px;
+    }
+    footer {
+      margin-top: 24px;
+      font-size: 14px;
+      color: var(--ink-soft);
+      text-align: center;
+    }
+    footer a { color: var(--brand); }
+    @media (max-width: 480px) {
+      article { padding: 24px 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="logo" href="/"><span aria-hidden="true">★</span>Sello</a>
+
+    <div class="draft" role="note">
+      <strong>Borrador pendiente de revisión legal.</strong> Este texto todavía no es la versión definitiva.
+      Los datos <mark>resaltados entre corchetes</mark> los tiene que completar Sello antes de publicarlo.
+    </div>
+
+    <article>
+      <h1>Política de privacidad</h1>
+      <p class="meta">Versión borrador · Última actualización: <mark>[fecha de publicación]</mark></p>
+
+      <p>
+        En esta política te contamos qué datos tuyos guardamos cuando sacás una tarjeta de fidelidad de un comercio
+        que usa Sello, para qué los usamos, con quién los compartimos y cómo podés ejercer tus derechos.
+        La escribimos de acuerdo con la Ley N° 25.326 de Protección de los Datos Personales de la República Argentina.
+      </p>
+
+      <h2>1. Quiénes somos</h2>
+      <p>
+        Sello es una plataforma que permite a comercios (cafeterías, panaderías, tiendas y otros locales) entregar
+        tarjetas de fidelidad digitales en Google Wallet.
+      </p>
+      <ul>
+        <li><strong>Sello:</strong> <mark>[razón social]</mark>, CUIT <mark>[número]</mark>, con domicilio en <mark>[domicilio legal]</mark>. Contacto: <mark>[email de privacidad]</mark>.</li>
+        <li><strong>El comercio:</strong> es el local donde te registrás. Sello administra la plataforma y guarda los datos; el comercio los usa para su programa de beneficios.</li>
+      </ul>
+
+      <h2>2. Qué datos guardamos</h2>
+      <ul>
+        <li><strong>Nombre y apellido</strong>, para que la tarjeta lleve tu nombre.</li>
+        <li><strong>Teléfono</strong>, para identificarte, evitar que tengas tarjetas repetidas y recuperar tu tarjeta si cambiás de celular.</li>
+        <li><strong>Fecha de nacimiento</strong> (día, mes y año), solo si decidís darla.</li>
+        <li><strong>Movimientos de tu tarjeta:</strong> los puntos que sumás y canjeás, con su fecha y motivo.</li>
+        <li><strong>Tus elecciones de privacidad:</strong> cuándo aceptaste esta política y si querés recibir novedades y promociones.</li>
+      </ul>
+      <p>
+        No te pedimos datos sensibles (como origen racial o étnico, opiniones políticas, convicciones religiosas,
+        información de salud o vida sexual) ni tu número de documento.
+      </p>
+
+      <h2>3. Para qué los usamos</h2>
+      <ul>
+        <li>Crear tu tarjeta de fidelidad y mantener actualizado tu saldo de puntos.</li>
+        <li>Permitir que el comercio registre tus compras y canjes.</li>
+        <li>Que el comercio pueda saludarte o darte un beneficio en tu cumpleaños, si nos diste la fecha.</li>
+        <li>Conocer la edad de sus clientes en forma agregada, para adaptar sus beneficios.</li>
+        <li>Enviarte novedades y promociones del comercio, <strong>solo si lo aceptaste</strong>. Podés dejar de recibirlas cuando quieras.</li>
+      </ul>
+      <p>No vendemos ni alquilamos tus datos.</p>
+
+      <h2>4. Con quién los compartimos</h2>
+      <ul>
+        <li><strong>El comercio donde te registraste</strong> puede ver tu nombre, teléfono, fecha de nacimiento y los movimientos de tu tarjeta en ese comercio. Otros comercios que usan Sello no pueden verlos.</li>
+        <li><strong>Google</strong> recibe los datos que se muestran en la tarjeta (nombre, nombre del comercio y puntos) para que puedas guardarla en Google Wallet. Google los trata según su propia política de privacidad.</li>
+        <li><strong>Proveedores técnicos</strong> que nos dan servicios de servidores y almacenamiento, que solo pueden usar los datos para prestarnos ese servicio: <mark>[nombre del proveedor de hosting y país donde se alojan los datos]</mark>.</li>
+        <li><strong>Autoridades</strong>, cuando una ley o una orden judicial nos obligue.</li>
+      </ul>
+
+      <h2>5. Cuánto tiempo los guardamos</h2>
+      <p>
+        Guardamos tus datos mientras tu tarjeta esté activa. Si pedís que la eliminemos, borramos tus datos dentro de
+        <mark>[plazo]</mark>, salvo los que una ley nos obligue a conservar.
+      </p>
+
+      <h2>6. Tus derechos</h2>
+      <p>Como titular de tus datos, podés:</p>
+      <ul>
+        <li><strong>Acceder</strong> a los datos que tenemos sobre vos, en forma gratuita y a intervalos no inferiores a seis meses, salvo que acredites un interés legítimo.</li>
+        <li><strong>Rectificar o actualizar</strong> datos que estén mal o desactualizados.</li>
+        <li><strong>Pedir que los eliminemos</strong> (supresión).</li>
+        <li><strong>Retirar tu consentimiento</strong> para recibir novedades y promociones, en cualquier momento.</li>
+      </ul>
+      <p>
+        Para ejercerlos escribinos a <mark>[email de privacidad]</mark> indicando tu nombre y el teléfono con el que te registraste.
+        Respondemos los pedidos de acceso dentro de los 10 días corridos y los de rectificación o supresión dentro de los 5 días hábiles,
+        como establece la Ley N° 25.326.
+      </p>
+      <p class="legal-box">
+        La Agencia de Acceso a la Información Pública, en su carácter de órgano de control de la Ley N° 25.326,
+        tiene la atribución de atender las denuncias y reclamos que interpongan quienes resulten afectados en sus derechos
+        por incumplimiento de las normas vigentes en materia de protección de datos personales.
+      </p>
+
+      <h2>7. Cómo cuidamos tus datos</h2>
+      <p>
+        Usamos medidas técnicas y organizativas para proteger tus datos: las cajas de cada comercio entran con una clave propia,
+        cada comercio solo accede a los datos de sus clientes y las claves se guardan cifradas.
+      </p>
+
+      <h2>8. Menores de edad</h2>
+      <p>
+        Las tarjetas están pensadas para personas de <mark>[edad mínima]</mark> años o más. Si sos menor, pedile a tu madre, padre o
+        tutor que lea esta política con vos.
+      </p>
+
+      <h2>9. Cambios en esta política</h2>
+      <p>
+        Si cambiamos esta política, vamos a publicar la nueva versión en esta página con su fecha de actualización.
+        Si el cambio es importante, te lo vamos a avisar y, cuando corresponda, te vamos a pedir que lo aceptes de nuevo.
+      </p>
+    </article>
+
+    <footer>
+      <a href="/">Volver a Sello</a>
+    </footer>
+  </div>
+</body>
+</html>
