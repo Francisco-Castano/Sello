@@ -27,12 +27,13 @@ NO_CACHE_HEADERS = {"Cache-Control": "no-cache"}
 def html_page(path: str) -> FileResponse:
     return FileResponse(path, headers=NO_CACHE_HEADERS)
 
-# Ruta del cliente (Registro y guardado en Google Wallet)
-# Cada comercio comparte su link /c/{slug}; sin slug la página pide el link del comercio
+# Página institucional de Sello: qué es, cómo funciona y acceso al alta y a la caja
 @app.get("/")
 def read_root():
-    return html_page("static/index.html")
+    return html_page("static/home.html")
 
+# Ruta del cliente (Registro y guardado en Google Wallet)
+# Cada comercio comparte su link /c/{slug}
 @app.get("/c/{slug}")
 def read_business_signup(slug: str):
     return html_page("static/index.html")

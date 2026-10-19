@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sello - Tarjetas de fidelidad en el celular</title>
+  <meta name="description" content="Sello convierte la tarjeta de sellos de tu comercio en una tarjeta de Google Wallet. Tus clientes la guardan en el celular y vos sumás puntos escaneando un QR." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      /* Marca Sello: papel, tinta y sello */
+      --paper: #fbf7f0;
+      --paper-deep: #f3ece0;
+      --card: #ffffff;
+      --ink: #14182b;
+      --ink-soft: #4a5068;
+      --ink-faint: #7a8098;
+      --line: #e6dfd2;
+      --brand: #1e3a8a;          /* Mismo azul que la tarjeta en Google Wallet */
+      --brand-deep: #152a66;
+      --brand-tint: #e8edf8;
+      --stamp: #e4572e;          /* El "sello" de tinta */
+      --stamp-tint: #fde9e2;
+      --ok: #2f8f5b;
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(20, 24, 43, 0.08);
+      --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+      --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; }
+
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      line-height: 1.15;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--stamp);
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 22px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 15px;
+      text-decoration: none;
+      border: 2px solid transparent;
+      transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:focus-visible { outline: 3px solid var(--stamp); outline-offset: 3px; }
+    .btn-primary {
+      background: var(--brand);
+      color: #fff;
+      box-shadow: 0 6px 18px rgba(30, 58, 138, 0.28);
+    }
+    .btn-primary:hover { background: var(--brand-deep); }
+    .btn-ghost {
+      border-color: var(--ink);
+      color: var(--ink);
+      background: transparent;
+    }
+    .btn-ghost:hover { background: var(--ink); color: var(--paper); }
+
+    /* ---------- Navegación ---------- */
+    header.nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(251, 247, 240, 0.88);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s ease;
+    }
+    header.nav.scrolled { border-bottom-color: var(--line); }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 68px;
+      gap: 16px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 2.5px solid var(--stamp);
+      display: grid;
+      place-items: center;
+      color: var(--stamp);
+      transform: rotate(-12deg);
+      font-size: 16px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      font-size: 15px;
+      font-weight: 500;
+    }
+    .nav-links a { text-decoration: none; color: var(--ink-soft); }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-actions { display: flex; align-items: center; gap: 10px; }
+    .nav-actions .btn { padding: 10px 18px; font-size: 14px; }
+    .nav-login {
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--brand);
+      padding: 10px 6px;
+    }
+
+    /* ---------- Hero ---------- */
+    .hero {
+      padding: 64px 0 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 48px;
+      align-items: center;
+    }
+    .hero h1 {
+      font-size: clamp(38px, 5.4vw, 64px);
+      margin-bottom: 20px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      color: var(--brand);
+      position: relative;
+      white-space: nowrap;
+    }
+    .hero h1 em::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 4px;
+      height: 10px;
+      background: var(--stamp-tint);
+      z-index: -1;
+      border-radius: 4px;
+    }
+    .hero p.lead {
+      font-size: 19px;
+      color: var(--ink-soft);
+      max-width: 540px;
+      margin: 0 0 32px;
+    }
+    .hero-ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+    .hero-notes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 22px;
+      margin-top: 28px;
+      font-size: 14px;
+      color: var(--ink-soft);
+    }
+    .hero-notes span::before {
+      content: "✓";
+      color: var(--ok);
+      font-weight: 700;
+      margin-right: 6px;
+    }
+
+    /* Teléfono con la tarjeta animada */
+    .phone-stage {
+      position: relative;
+      display: flex;
+      justify-content: center;
+    }
+    .phone-stage::before {
+      content: "";
+      position: absolute;
+      width: 380px;
+      height: 380px;
+      max-width: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--brand-tint) 0%, rgba(232, 237, 248, 0) 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .phone {
+      position: relative;
+      width: 290px;
+      max-width: 100%;
+      background: var(--ink);
+      border-radius: 40px;
+      padding: 12px;
+      box-shadow: 0 30px 60px rgba(20, 24, 43, 0.25);
+    }
+    .phone-screen {
+      background: #f1f3f8;
+      border-radius: 30px;
+      padding: 18px 14px 22px;
+      min-height: 500px;
+      position: relative;
+      overflow: hidden;
+    }
+    .phone-notch {
+      width: 90px;
+      height: 22px;
+      background: var(--ink);
+      border-radius: 0 0 14px 14px;
+      margin: -18px auto 14px;
+    }
+    .wallet-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #3c4257;
+      margin: 0 4px 10px;
+    }
+    .pass {
+      background: var(--brand);
+      color: #fff;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 10px 24px rgba(30, 58, 138, 0.35);
+      font-family: var(--font-body);
+    }
+    .pass-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      opacity: 0.85;
+    }
+    .pass-name {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 14px 0 2px;
+    }
+    .pass-sub { font-size: 12px; opacity: 0.8; }
+    .pass-points {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin: 14px 0 12px;
+    }
+    .pass-points strong {
+      font-size: 34px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      transition: transform 0.25s ease;
+      display: inline-block;
+    }
+    .pass-points strong.bump { transform: scale(1.15); }
+    .pass-points span { font-size: 14px; opacity: 0.85; }
+    .stamps {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .stamp-slot {
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 1.5px dashed rgba(255, 255, 255, 0.45);
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+    }
+    .stamp-slot.on {
+      border: 2px solid #fff;
+      background: rgba(255, 255, 255, 0.16);
+      animation: stamp-in 0.45s cubic-bezier(0.2, 1.6, 0.4, 1);
+    }
+    .stamp-slot.on::after { content: "★"; }
+    .stamp-slot.prize {
+      border-style: solid;
+      border-color: var(--stamp);
+      color: var(--stamp);
+      background: #fff;
+    }
+    .stamp-slot.prize::after { content: "🎁"; font-size: 14px; }
+    @keyframes stamp-in {
+      0% { transform: scale(1.8) rotate(-20deg); opacity: 0; }
+      100% { transform: scale(1) rotate(0); opacity: 1; }
+    }
+    .qr-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .qr {
+      width: 108px;
+      height: 108px;
+      display: grid;
+      grid-template-columns: repeat(21, 1fr);
+      grid-template-rows: repeat(21, 1fr);
+    }
+    .qr i { background: var(--ink); }
+    .qr i.off { background: transparent; }
+    .qr-id {
+      font-size: 10px;
+      color: #6b7280;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .toast {
+      position: absolute;
+      left: 50%;
+      top: 10px;
+      transform: translate(-50%, -16px);
+      background: var(--ink);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 14px;
+      border-radius: 999px;
+      opacity: 0;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      white-space: nowrap;
+      box-shadow: 0 8px 18px rgba(20, 24, 43, 0.25);
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .toast.prize { background: var(--stamp); }
+
+    /* Sello decorativo */
+    .ink-stamp {
+      position: absolute;
+      right: -6px;
+      top: 26px;
+      width: 104px;
+      height: 104px;
+      border-radius: 50%;
+      border: 3px solid var(--stamp);
+      color: var(--stamp);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 13px;
+      line-height: 1.2;
+      transform: rotate(14deg);
+      background: rgba(251, 247, 240, 0.9);
+      animation: ink-drop 0.9s 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+      z-index: 2;
+    }
+    .ink-stamp::before {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      border: 1.5px dashed var(--stamp);
+    }
+    @keyframes ink-drop {
+      0% { transform: scale(2.2) rotate(-10deg); opacity: 0; }
+      100% { transform: scale(1) rotate(14deg); opacity: 1; }
+    }
+
+    /* ---------- Secciones ---------- */
+    section { padding: 88px 0; }
+    .section-head {
+      max-width: 680px;
+      margin-bottom: 48px;
+    }
+    .section-head.center {
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+    }
+    .section-head h2 {
+      font-size: clamp(30px, 3.6vw, 44px);
+      margin-bottom: 14px;
+    }
+    .section-head p {
+      font-size: 18px;
+      color: var(--ink-soft);
+      margin: 0;
+    }
+
+    /* Problema */
+    .problem { background: var(--paper-deep); }
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .problem-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 28px;
+      border: 1px solid var(--line);
+    }
+    .problem-card .icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+    .problem-card h3 {
+      font-size: 21px;
+      margin-bottom: 8px;
+    }
+    .problem-card p { margin: 0; color: var(--ink-soft); font-size: 15px; }
+    .problem-answer {
+      margin-top: 36px;
+      text-align: center;
+      font-family: var(--font-display);
+      font-size: clamp(22px, 2.6vw, 28px);
+      font-weight: 600;
+    }
+    .problem-answer span { color: var(--brand); }
+
+    /* Cómo funciona */
+    .tabs {
+      display: inline-flex;
+      background: var(--paper-deep);
+      border-radius: 999px;
+      padding: 5px;
+      margin-bottom: 36px;
+      border: 1px solid var(--line);
+    }
+    .tab {
+      border: none;
+      background: transparent;
+      padding: 10px 20px;
+      border-radius: 999px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    .tab[aria-selected="true"] {
+      background: var(--card);
+      color: var(--ink);
+      box-shadow: 0 2px 8px rgba(20, 24, 43, 0.08);
+    }
+    .tab:focus-visible { outline: 3px solid var(--stamp); outline-offset: 2px; }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      counter-reset: step;
+    }
+    .steps[hidden] { display: none; }
+    .step {
+      position: relative;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 28px 26px 26px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+    .step-num {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2.5px solid var(--stamp);
+      color: var(--stamp);
+      display: grid;
+      place-items: center;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 19px;
+      margin-bottom: 18px;
+      transform: rotate(-10deg);
+    }
+    .step h3 { font-size: 21px; margin-bottom: 8px; }
+    .step p { margin: 0; color: var(--ink-soft); font-size: 15px; }
+    .step code {
+      background: var(--brand-tint);
+      color: var(--brand);
+      padding: 1px 6px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .how-cta { margin-top: 32px; text-align: center; }
+
+    /* Funcionalidades */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+    .feature {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 26px;
+      border: 1px solid var(--line);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .feature:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .feature .icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      background: var(--brand-tint);
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      margin-bottom: 16px;
+    }
+    .feature h3 {
+      font-family: var(--font-body);
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .feature p { margin: 0; color: var(--ink-soft); font-size: 14.5px; }
+
+    /* Para quién */
+    .audience { background: var(--brand); color: #fff; }
+    .audience .section-head p { color: rgba(255, 255, 255, 0.8); }
+    .audience .eyebrow { color: #ffb59e; }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      font-weight: 500;
+      font-size: 15px;
+    }
+    .audience-note {
+      text-align: center;
+      margin: 32px 0 0;
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 16px;
+    }
+
+    /* Próximamente */
+    .roadmap-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .roadmap-card {
+      border-radius: var(--radius);
+      padding: 26px;
+      border: 1.5px dashed var(--ink-faint);
+      background: transparent;
+    }
+    .badge-soon {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--stamp);
+      background: var(--stamp-tint);
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+    .roadmap-card h3 {
+      font-family: var(--font-body);
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .roadmap-card p { margin: 0; color: var(--ink-soft); font-size: 14.5px; }
+
+    /* Preguntas frecuentes */
+    .faq { background: var(--paper-deep); }
+    .faq-list {
+      max-width: 780px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    details {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 0 22px;
+    }
+    summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 18px 0;
+      font-weight: 600;
+      font-size: 16.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after {
+      content: "+";
+      font-size: 24px;
+      font-weight: 400;
+      color: var(--brand);
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+    details[open] summary::after { transform: rotate(45deg); }
+    summary:focus-visible { outline: 3px solid var(--stamp); outline-offset: 4px; border-radius: 6px; }
+    details p {
+      margin: 0 0 18px;
+      color: var(--ink-soft);
+      font-size: 15px;
+    }
+
+    /* Cierre */
+    .final-cta { text-align: center; }
+    .final-box {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      padding: 56px 24px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .final-box h2 {
+      font-size: clamp(30px, 3.8vw, 46px);
+      margin-bottom: 14px;
+    }
+    .final-box p {
+      color: var(--ink-soft);
+      font-size: 18px;
+      max-width: 560px;
+      margin: 0 auto 28px;
+    }
+    .final-box .hero-ctas { justify-content: center; }
+
+    footer {
+      padding: 40px 0 48px;
+      border-top: 1px solid var(--line);
+      font-size: 14px;
+      color: var(--ink-faint);
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+    .footer-links a { text-decoration: none; color: var(--ink-soft); }
+    .footer-links a:hover { color: var(--ink); }
+
+    /* Aparición al hacer scroll */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 960px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 56px; }
+      .hero { padding-top: 40px; }
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+      .nav-links { display: none; }
+    }
+    @media (max-width: 720px) {
+      section { padding: 64px 0; }
+      .problem-grid, .steps, .roadmap-grid { grid-template-columns: 1fr; }
+      .hero p.lead { font-size: 17px; }
+      .nav-login { display: none; }
+      .tabs { display: flex; width: 100%; }
+      .tab { flex: 1; padding: 10px 8px; font-size: 14px; }
+    }
+    @media (max-width: 480px) {
+      .features-grid { grid-template-columns: 1fr; }
+      .hero-ctas .btn { width: 100%; }
+      .ink-stamp { width: 80px; height: 80px; font-size: 11px; right: max(10px, calc(50% - 168px)); top: 8px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+      .reveal { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav" id="nav">
+    <div class="wrap nav-inner">
+      <a class="logo" href="/" aria-label="Sello, inicio">
+        <span class="logo-mark" aria-hidden="true">★</span>
+        Sello
+      </a>
+      <nav class="nav-links" aria-label="Secciones">
+        <a href="#como-funciona">Cómo funciona</a>
+        <a href="#que-incluye">Qué incluye</a>
+        <a href="#preguntas">Preguntas</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="nav-login" href="/pos">Entrar a la caja</a>
+        <a class="btn btn-primary" href="/alta">Sumá tu comercio</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <span class="eyebrow">Fidelidad digital para comercios</span>
+          <h1>La tarjeta de sellos, ahora en el <em>celular</em> de tus clientes.</h1>
+          <p class="lead">
+            Sello convierte el programa de fidelidad de tu local en una tarjeta de Google Wallet.
+            Tus clientes la guardan con un toque, vos sumás puntos escaneando su código QR
+            y el saldo se actualiza solo en su celular.
+          </p>
+          <div class="hero-ctas">
+            <a class="btn btn-primary" href="/alta">Sumá tu comercio</a>
+            <a class="btn btn-ghost" href="#como-funciona">Ver cómo funciona</a>
+          </div>
+          <div class="hero-notes">
+            <span>Tus clientes no bajan ninguna app</span>
+            <span>La caja funciona desde el navegador</span>
+            <span>Sin tarjetas de cartón</span>
+          </div>
+        </div>
+
+        <div class="phone-stage" aria-hidden="true">
+          <div class="ink-stamp">CLIENTE<br />FIEL</div>
+          <div class="phone">
+            <div class="phone-screen">
+              <div class="phone-notch"></div>
+              <div class="wallet-label">Google Wallet</div>
+              <div class="pass">
+                <div class="pass-top">
+                  <span>Café Roma</span>
+                  <span>Sello Club</span>
+                </div>
+                <div class="pass-name">Ana García</div>
+                <div class="pass-sub">Puntos acumulados</div>
+                <div class="pass-points">
+                  <strong id="demo-points">0</strong>
+                  <span>pts</span>
+                </div>
+                <div class="stamps" id="demo-stamps"></div>
+                <div class="qr-box">
+                  <div class="qr" id="demo-qr"></div>
+                  <div class="qr-id">sello_4f9a2c81d03e7b56</div>
+                </div>
+              </div>
+              <div class="toast" id="demo-toast">+10 pts en Café Roma</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- El problema -->
+    <section class="problem">
+      <div class="wrap">
+        <div class="section-head center reveal">
+          <span class="eyebrow">El problema</span>
+          <h2>Las tarjetas de cartón no funcionan más.</h2>
+          <p>Todos tuvimos una tarjetita de sellos en la billetera. Casi nadie la completó.</p>
+        </div>
+        <div class="problem-grid">
+          <div class="problem-card reveal">
+            <div class="icon" aria-hidden="true">🗑️</div>
+            <h3>Se pierden</h3>
+            <p>Quedan olvidadas en un cajón o se tiran sin querer. Y con ellas, el motivo para volver a tu local.</p>
+          </div>
+          <div class="problem-card reveal">
+            <div class="icon" aria-hidden="true">📱</div>
+            <h3>Nadie baja otra app</h3>
+            <p>Pedirle a un cliente que instale una aplicación solo para juntar puntos es perderlo antes de empezar.</p>
+          </div>
+          <div class="problem-card reveal">
+            <div class="icon" aria-hidden="true">❓</div>
+            <h3>No sabés quién vuelve</h3>
+            <p>Con un sello de tinta no queda registro de quiénes son tus clientes ni de cuánto compran.</p>
+          </div>
+        </div>
+        <p class="problem-answer reveal">Con Sello, la tarjeta vive en el lugar que nadie pierde: <span>el celular</span>.</p>
+      </div>
+    </section>
+
+    <!-- Cómo funciona -->
+    <section id="como-funciona">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="eyebrow">Cómo funciona</span>
+          <h2>Simple para vos. Más simple para tus clientes.</h2>
+          <p>Empezás en minutos y no necesitás instalar nada: alcanza con un navegador y una cámara.</p>
+        </div>
+
+        <div class="tabs reveal" role="tablist" aria-label="Cómo funciona">
+          <button class="tab" role="tab" id="tab-comercio" aria-controls="steps-comercio" aria-selected="true">Para tu comercio</button>
+          <button class="tab" role="tab" id="tab-clientes" aria-controls="steps-clientes" aria-selected="false" tabindex="-1">Para tus clientes</button>
+        </div>
+
+        <div class="steps" id="steps-comercio" role="tabpanel" aria-labelledby="tab-comercio">
+          <div class="step reveal">
+            <div class="step-num">1</div>
+            <h3>Pedí tu alta</h3>
+            <p>Completás el nombre de tu local, elegís tu link y una clave para la caja. Revisamos la solicitud y te avisamos por email cuando está habilitada.</p>
+          </div>
+          <div class="step reveal">
+            <div class="step-num">2</div>
+            <h3>Compartí tu link</h3>
+            <p>Tu comercio tiene su propio link, por ejemplo <code>/c/cafe-roma</code>. Ponelo en un QR en el mostrador, en tu Instagram o donde quieras.</p>
+          </div>
+          <div class="step reveal">
+            <div class="step-num">3</div>
+            <h3>Escaneá y sumá</h3>
+            <p>En cada compra abrís la caja en <code>/pos</code>, escaneás el QR de la tarjeta del cliente y cargás los puntos. Al instante se ven en su celular.</p>
+          </div>
+        </div>
+
+        <div class="steps" id="steps-clientes" role="tabpanel" aria-labelledby="tab-clientes" hidden>
+          <div class="step">
+            <div class="step-num">1</div>
+            <h3>Abren tu link</h3>
+            <p>Escanean el QR de tu mostrador o tocan el link que compartiste. Se abre una página con el nombre de tu local.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <h3>Guardan su tarjeta</h3>
+            <p>Ponen su nombre (y su teléfono, si quieren) y tocan "Añadir a Google Wallet". La tarjeta queda guardada junto a sus otras tarjetas.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <h3>Juntan y canjean</h3>
+            <p>En cada compra muestran el QR de su tarjeta. Ven sus puntos actualizados en el celular y los canjean por los premios de tu local.</p>
+          </div>
+        </div>
+
+        <div class="how-cta reveal">
+          <a class="btn btn-primary" href="/alta">Empezar con mi comercio</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Qué incluye -->
+    <section id="que-incluye" style="padding-top: 0;">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="eyebrow">Qué incluye</span>
+          <h2>Todo lo que necesita tu programa de fidelidad.</h2>
+          <p>Sin instalaciones, sin equipos especiales y sin complicaciones técnicas.</p>
+        </div>
+        <div class="features-grid">
+          <div class="feature reveal">
+            <div class="icon" aria-hidden="true">💳</div>
+            <h3>Tarjeta en Google Wallet</h3>
+            <p>Tus clientes guardan la tarjeta en la billetera que ya tienen en su Android. Siempre a mano, imposible de perder.</p>
+          </div>
+          <div class="feature reveal">
+            <div class="icon" aria-hidden="true">⚡</div>
+            <h3>Saldo en vivo</h3>
+            <p>Cuando cargás puntos en la caja, el saldo de la tarjeta se actualiza solo en el celular del cliente.</p>
+          </div>
+          <div class="feature reveal">
+            <div class="icon" aria-hidden="true">📷</div>
+            <h3>Caja desde el navegador</h3>
+            <p>Escaneás el QR con la cámara de una compu, tablet o celular. No hace falta lector ni instalar programas.</p>
+          </div>
+          <div class="feature reveal">
+            <div class="icon" aria-hidden="true">🎁</div>
+            <h3>Canje de premios</h3>
+            <p>Descontás los puntos cuando el cliente canjea un premio. El sistema nunca deja el saldo en negativo.</p>
+          </div>
+          <div class="feature reveal">
+            <div class="icon" aria-hidden="true">🔗</div>
+            <h3>Tu propio link</h3>
+            <p>Cada comercio tiene su link de registro con su nombre, listo para compartir en el local o en redes.</p>
+          </div>
+          <div class="feature reveal">
+            <div class="icon" aria-hidden="true">🖥️</div>
+            <h3>Todas las cajas que quieras</h3>
+            <p>Abrí la caja en tantos dispositivos como necesites con la clave de tu comercio.</p>
+          </div>
+          <div class="feature reveal">
+            <div class="icon" aria-hidden="true">🧾</div>
+            <h3>Historial de movimientos</h3>
+            <p>Cada carga y cada canje queda registrado con su fecha y motivo.</p>
+          </div>
+          <div class="feature reveal">
+            <div class="icon" aria-hidden="true">🔒</div>
+            <h3>Datos protegidos</h3>
+            <p>La caja se abre solo con tu clave, y cada comercio ve únicamente las tarjetas de sus propios clientes.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Para quién -->
+    <section class="audience">
+      <div class="wrap">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Para quién es</span>
+          <h2>Para cualquier local que quiera que sus clientes vuelvan.</h2>
+          <p>Si hoy usás tarjetitas de sellos, o te gustaría tener una, Sello es para vos.</p>
+        </div>
+        <div class="chips reveal">
+          <span class="chip"><span aria-hidden="true">☕</span> Cafeterías</span>
+          <span class="chip"><span aria-hidden="true">🥐</span> Panaderías</span>
+          <span class="chip"><span aria-hidden="true">🍦</span> Heladerías</span>
+          <span class="chip"><span aria-hidden="true">🍕</span> Restaurantes</span>
+          <span class="chip"><span aria-hidden="true">💈</span> Peluquerías y barberías</span>
+          <span class="chip"><span aria-hidden="true">💅</span> Centros de estética</span>
+          <span class="chip"><span aria-hidden="true">🏋️</span> Gimnasios</span>
+          <span class="chip"><span aria-hidden="true">🛍️</span> Tiendas</span>
+        </div>
+        <p class="audience-note reveal">Un cliente que vuelve vale más que uno nuevo. Sello te da un motivo concreto para que vuelva.</p>
+      </div>
+    </section>
+
+    <!-- Próximamente -->
+    <section id="proximamente">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="eyebrow">Lo que viene</span>
+          <h2>Sello sigue creciendo.</h2>
+          <p>Estas funciones están en desarrollo y van a estar disponibles para todos los comercios.</p>
+        </div>
+        <div class="roadmap-grid">
+          <div class="roadmap-card reveal">
+            <span class="badge-soon">Próximamente</span>
+            <h3>Apple Wallet</h3>
+            <p>Para que tus clientes con iPhone también guarden su tarjeta en la billetera de su celular.</p>
+          </div>
+          <div class="roadmap-card reveal">
+            <span class="badge-soon">Próximamente</span>
+            <h3>Tu marca en la tarjeta</h3>
+            <p>La tarjeta con el logo, el nombre y los colores de tu comercio.</p>
+          </div>
+          <div class="roadmap-card reveal">
+            <span class="badge-soon">Próximamente</span>
+            <h3>Estadísticas de tu programa</h3>
+            <p>Cuántos clientes tenés, cuántos vuelven y cuántos puntos se cargan y se canjean.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Preguntas frecuentes -->
+    <section class="faq" id="preguntas">
+      <div class="wrap">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Preguntas frecuentes</span>
+          <h2>Todo lo que te estás preguntando.</h2>
+        </div>
+        <div class="faq-list">
+          <details class="reveal">
+            <summary>¿Mis clientes tienen que descargar una aplicación?</summary>
+            <p>No. La tarjeta se guarda en Google Wallet, la billetera que ya viene en los celulares Android. Solo tienen que abrir tu link y tocar "Añadir a Google Wallet".</p>
+          </details>
+          <details class="reveal">
+            <summary>¿Funciona con iPhone?</summary>
+            <p>Por ahora la tarjeta funciona con Google Wallet, en Android. La versión para Apple Wallet, para iPhone, está en desarrollo.</p>
+          </details>
+          <details class="reveal">
+            <summary>¿Qué necesito para usar la caja?</summary>
+            <p>Un dispositivo con navegador y cámara: una compu con webcam, una tablet o un celular. Entrás a la caja con el link de tu comercio y tu clave, y escaneás el QR de la tarjeta del cliente.</p>
+          </details>
+          <details class="reveal">
+            <summary>¿Cuánto tarda el alta de mi comercio?</summary>
+            <p>Completás el formulario en un par de minutos. Después revisamos cada solicitud a mano y te escribimos al email que dejaste cuando tu comercio queda habilitado.</p>
+          </details>
+          <details class="reveal">
+            <summary>¿Puedo usar la caja en varias computadoras?</summary>
+            <p>Sí. Todas las cajas de tu comercio entran con la misma clave y ven las mismas tarjetas. Si cambiás la clave, todas las cajas abiertas tienen que volver a entrar con la nueva.</p>
+          </details>
+          <details class="reveal">
+            <summary>¿Cómo se canjea un premio?</summary>
+            <p>Desde la caja escaneás la tarjeta del cliente y descontás los puntos del premio. Vos decidís qué premios ofrecer y cuántos puntos vale cada uno.</p>
+          </details>
+          <details class="reveal">
+            <summary>¿Qué pasa si un cliente cambia de celular?</summary>
+            <p>La tarjeta está asociada a su cuenta de Google, así que vuelve a aparecer en Google Wallet cuando inicia sesión en el celular nuevo, con sus puntos.</p>
+          </details>
+          <details class="reveal">
+            <summary>¿Otros comercios pueden ver a mis clientes?</summary>
+            <p>No. Cada comercio entra con su propia clave y solo puede ver y cargar puntos en las tarjetas de sus clientes.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cierre -->
+    <section class="final-cta">
+      <div class="wrap">
+        <div class="final-box reveal">
+          <span class="eyebrow">Empezá hoy</span>
+          <h2>Dale a tus clientes un motivo para volver.</h2>
+          <p>Pedí el alta de tu comercio y empezá a entregar tarjetas digitales en cuanto quede habilitado.</p>
+          <div class="hero-ctas">
+            <a class="btn btn-primary" href="/alta">Sumá tu comercio</a>
+            <a class="btn btn-ghost" href="/pos">Ya tengo cuenta: entrar a la caja</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <a class="logo" href="/" aria-label="Sello, inicio" style="font-size: 20px;">
+        <span class="logo-mark" aria-hidden="true" style="width: 28px; height: 28px; font-size: 13px;">★</span>
+        Sello
+      </a>
+      <div class="footer-links">
+        <a href="#como-funciona">Cómo funciona</a>
+        <a href="#que-incluye">Qué incluye</a>
+        <a href="#preguntas">Preguntas</a>
+        <a href="/alta">Sumá tu comercio</a>
+        <a href="/pos">Caja</a>
+      </div>
+      <div>© <span id="year"></span> Sello</div>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("year").innerText = new Date().getFullYear();
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Borde de la barra de navegación al hacer scroll
+    const nav = document.getElementById("nav");
+    window.addEventListener("scroll", () => {
+      nav.classList.toggle("scrolled", window.scrollY > 8);
+    }, { passive: true });
+
+    // Pestañas de "Cómo funciona"
+    const tabs = [...document.querySelectorAll(".tab")];
+    function activarTab(tab) {
+      tabs.forEach(t => {
+        const activa = t === tab;
+        t.setAttribute("aria-selected", activa);
+        t.tabIndex = activa ? 0 : -1;
+        document.getElementById(t.getAttribute("aria-controls")).hidden = !activa;
+      });
+    }
+    tabs.forEach((tab, i) => {
+      tab.addEventListener("click", () => activarTab(tab));
+      tab.addEventListener("keydown", e => {
+        if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+        const siguiente = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+        activarTab(siguiente);
+        siguiente.focus();
+      });
+    });
+
+    // Aparición de bloques al hacer scroll
+    const reveals = document.querySelectorAll(".reveal");
+    if (reduceMotion || !("IntersectionObserver" in window)) {
+      reveals.forEach(el => el.classList.add("visible"));
+    } else {
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+      reveals.forEach(el => observer.observe(el));
+    }
+
+    // QR decorativo de la tarjeta de ejemplo (patrón fijo, no se puede escanear)
+    (function dibujarQr() {
+      const qr = document.getElementById("demo-qr");
+      const size = 21;
+      let seed = 7;
+      const random = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+      const enMarco = (x, y, ox, oy) => {
+        const dx = x - ox, dy = y - oy;
+        if (dx < 0 || dy < 0 || dx > 6 || dy > 6) return null;
+        const borde = dx === 0 || dy === 0 || dx === 6 || dy === 6;
+        const centro = dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4;
+        return borde || centro;
+      };
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const marco = enMarco(x, y, 0, 0) ?? enMarco(x, y, 14, 0) ?? enMarco(x, y, 0, 14);
+          const cerca = (x < 8 && y < 8) || (x > 12 && y < 8) || (x < 8 && y > 12);
+          const lleno = marco !== null ? marco : (!cerca && random() > 0.5);
+          const celda = document.createElement("i");
+          if (!lleno) celda.className = "off";
+          qr.appendChild(celda);
+        }
+      }
+    })();
+
+    // Animación de la tarjeta: cada "escaneo" suma 10 puntos y un sello
+    (function animarTarjeta() {
+      const TOTAL = 10;
+      const stampsEl = document.getElementById("demo-stamps");
+      const pointsEl = document.getElementById("demo-points");
+      const toast = document.getElementById("demo-toast");
+      const slots = [];
+      for (let i = 0; i < TOTAL; i++) {
+        const slot = document.createElement("div");
+        slot.className = "stamp-slot";
+        stampsEl.appendChild(slot);
+        slots.push(slot);
+      }
+
+      function pintar(sellos) {
+        slots.forEach((slot, i) => {
+          slot.className = "stamp-slot" + (i < sellos ? " on" : "") + (i === TOTAL - 1 && sellos >= TOTAL ? " prize" : "");
+        });
+        pointsEl.innerText = sellos * 10;
+      }
+
+      if (reduceMotion) {
+        pintar(6);
+        return;
+      }
+
+      let sellos = 0;
+      function mostrarToast(texto, premio) {
+        toast.innerText = texto;
+        toast.classList.toggle("prize", premio);
+        toast.classList.add("show");
+        setTimeout(() => toast.classList.remove("show"), 1300);
+      }
+
+      function paso() {
+        if (sellos >= TOTAL) {
+          sellos = 0;
+          pintar(0);
+          setTimeout(paso, 900);
+          return;
+        }
+        sellos++;
+        pintar(sellos);
+        pointsEl.classList.add("bump");
+        setTimeout(() => pointsEl.classList.remove("bump"), 250);
+
+        if (sellos === TOTAL) {
+          mostrarToast("¡Premio disponible! 🎁", true);
+          setTimeout(paso, 3200);
+        } else {
+          mostrarToast("+10 pts en Café Roma", false);
+          setTimeout(paso, 1700);
+        }
+      }
+
+      pintar(0);
+      setTimeout(paso, 1200);
+    })();
+  </script>
+</body>
+</html>
