@@ -69,29 +69,6 @@ def create_pass(data: UserRegisterRequest, db: Session = Depends(get_db)):
         "wallet_url": wallet_url
     }
 
-@router.post("/{pass_id}/sumar-puntos")
-def add_points(pass_id: str, data: AddPointsRequest, db: Session = Depends(get_db)):
-    pass_obj = db.query(models.Pass).filter(models.Pass.id == pass_id).first()
-    if not pass_obj:
-        raise HTTPException(status_code=404, detail="Pase no encontrado")
-
-    pass_obj.balance += data.points
-    tx = models.Transaction(
-        pass_id=pass_obj.id,
-        points=data.points,
-        description=data.description
-    )
-    db.add(tx)
-    db.commit()
-    db.refresh(pass_obj)
-
-    return {
-        "status": "ok",
-        "pass_id": pass_obj.id,
-        "points_added": data.points,
-        "new_balance": pass_obj.balance
-    }
-
 @router.get("/{pass_id}")
 def get_pass_info(pass_id: str, db: Session = Depends(get_db)):
     pass_obj = db.query(models.Pass).filter(models.Pass.id == pass_id).first()
