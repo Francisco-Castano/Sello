@@ -20,6 +20,19 @@ class Business(Base):
 
     # Relaciones
     passes = relationship("Pass", back_populates="business")
+    pos_credential = relationship("PosCredential", back_populates="business", uselist=False)
+
+
+class PosCredential(Base):
+    """Clave compartida del comercio para entrar a la caja (/pos).
+    Vive en su propia tabla para que create_all la agregue en bases existentes sin migraciones."""
+    __tablename__ = "pos_credentials"
+
+    business_id = Column(String, ForeignKey("businesses.id"), primary_key=True)
+    password_hash = Column(String, nullable=False)  # Formato: scrypt$<salt>$<hash>
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    business = relationship("Business", back_populates="pos_credential")
 
 
 class User(Base):

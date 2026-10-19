@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 import models
 from GoogleWallet import MI_ISSUER_ID, generate_google_wallet_url, update_google_wallet_balance
+from auth import get_current_business
 
 router = APIRouter(
     prefix="/passes",
@@ -41,7 +42,8 @@ def create_pass(data: UserRegisterRequest, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(user)
 
-    unique_pass_id = f"sello_{uuid.uuid4().hex[:8]}"
+    # 16 caracteres hex para que los IDs no se puedan adivinar
+    unique_pass_id = f"sello_{uuid.uuid4().hex[:16]}"
 
     new_pass = models.Pass(
         id=unique_pass_id,
@@ -69,11 +71,23 @@ def create_pass(data: UserRegisterRequest, db: Session = Depends(get_db)):
         "wallet_url": wallet_url
     }
 
-@router.get("/{pass_id}")
-def get_pass_info(pass_id: str, db: Session = Depends(get_db)):
-    pass_obj = db.query(models.Pass).filter(models.Pass.id == pass_id).first()
+def get_business_pass(pass_id: str, business: models.Business, db: Session) -> models.Pass:
+    """Busca el pase solo dentro del comercio logueado; los pases de otros comercios dan 404."""
+    pass_obj = db.query(models.Pass).filter(
+        models.Pass.id == pass_id,
+        models.Pass.business_id == business.id
+    ).first()
     if not pass_obj:
         raise HTTPException(status_code=404, detail="Pase no encontrado")
+    return pass_obj
+
+@router.get("/{pass_id}")
+def get_pass_info(
+    pass_id: str,
+    db: Session = Depends(get_db),
+    business: models.Business = Depends(get_current_business)
+):
+    pass_obj = get_business_pass(pass_id, business, db)
 
     return {
         "pass_id": pass_obj.id,
@@ -84,11 +98,21 @@ def get_pass_info(pass_id: str, db: Session = Depends(get_db)):
     }
 
 @router.post("/{pass_id}/sumar-puntos")
-def add_points(pass_id: str, data: AddPointsRequest, db: Session = Depends(get_db)):
-    # 1. Buscar el pase en la base de datos local
-    pass_obj = db.query(models.Pass).filter(models.Pass.id == pass_id).first()
-    if not pass_obj:
-        raise HTTPException(status_code=404, detail="Pase no encontrado")
+def add_points(
+    pass_id: str,
+    data: AddPointsRequest,
+    db: Session = Depends(get_db),
+    business: models.Business = Depends(get_current_business)
+):
+    # 1. Buscar el pase dentro del comercio logueado
+    pass_obj = get_business_pass(pass_id, business, db)
+
+    if data.points == 0:
+        raise HTTPException(status_code=400, detail="La cantidad de puntos no puede ser 0")
+    if pass_obj.status != "active":
+        raise HTTPException(status_code=400, detail="El pase no está activo")
+    if pass_obj.balance + data.points < 0:
+        raise HTTPException(status_code=400, detail="Saldo insuficiente para el canje")
 
     # 2. Actualizar el saldo y guardar la transacción contable
     pass_obj.balance += data.points

@@ -120,6 +120,32 @@
     .btn-secondary:hover {
       background-color: #334155;
     }
+    .session-bar {
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 12px;
+    }
+    .link-btn {
+      background: none;
+      border: none;
+      color: #38bdf8;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 0;
+    }
+    #login-panel {
+      display: none;
+      margin-top: 0;
+    }
+    #login-error {
+      color: #f87171;
+      font-size: 14px;
+      margin-top: 10px;
+      text-align: center;
+    }
     #status-msg {
       margin-top: 12px;
       text-align: center;
@@ -131,7 +157,27 @@
 <body>
   <div class="container">
     <h1>Sello POS</h1>
-    <p class="subtitle">Escanea la tarjeta del cliente para acreditar puntos</p>
+    <p class="subtitle" id="subtitle">Escanea la tarjeta del cliente para acreditar puntos</p>
+
+    <!-- Ingreso a la caja con la clave del comercio -->
+    <form id="login-panel" class="card-panel" onsubmit="iniciarSesion(event)">
+      <div class="input-group">
+        <label for="login-slug">Comercio:</label>
+        <input type="text" id="login-slug" placeholder="ej: demo-cafe" autocomplete="username" required />
+      </div>
+      <div class="input-group">
+        <label for="login-password">Clave de caja:</label>
+        <input type="password" id="login-password" autocomplete="current-password" required />
+      </div>
+      <button class="btn-action" id="login-btn" type="submit">Entrar</button>
+      <div id="login-error"></div>
+    </form>
+
+    <!-- Comercio logueado -->
+    <div class="session-bar" id="session-bar">
+      <span id="session-business">Comercio</span>
+      <button class="link-btn" onclick="cerrarSesion()">Cerrar caja</button>
+    </div>
 
     <!-- Visor de la cámara -->
     <div id="reader"></div>
@@ -168,8 +214,95 @@
     let html5QrCode = null;
     let currentPassId = null;
 
+    const TOKEN_KEY = "sello_pos_token";
+    const SLUG_KEY = "sello_pos_slug";
+
+    // localStorage puede fallar (modo privado, almacenamiento bloqueado)
+    function leer(key) {
+      try { return localStorage.getItem(key); } catch (e) { return null; }
+    }
+    function guardar(key, value) {
+      try { localStorage.setItem(key, value); } catch (e) {}
+    }
+    function borrar(key) {
+      try { localStorage.removeItem(key); } catch (e) {}
+    }
+
+    let sessionToken = leer(TOKEN_KEY);
+
+    function authHeaders(extra = {}) {
+      return { ...extra, "Authorization": `Bearer ${sessionToken}` };
+    }
+
+    function mostrarLogin(mensaje = "") {
+      detenerCamara();
+      sessionToken = null;
+      borrar(TOKEN_KEY);
+      document.getElementById("reader").style.display = "none";
+      document.getElementById("card-panel").style.display = "none";
+      document.getElementById("session-bar").style.display = "none";
+      document.getElementById("subtitle").innerText = "Ingresá con la clave de caja del comercio";
+      document.getElementById("login-panel").style.display = "block";
+      document.getElementById("login-error").innerText = mensaje;
+      document.getElementById("login-slug").value = leer(SLUG_KEY) || "";
+      document.getElementById("login-password").value = "";
+    }
+
+    function mostrarCaja(nombreComercio) {
+      document.getElementById("login-panel").style.display = "none";
+      document.getElementById("subtitle").innerText = "Escanea la tarjeta del cliente para acreditar puntos";
+      document.getElementById("session-business").innerText = nombreComercio;
+      document.getElementById("session-bar").style.display = "flex";
+      reiniciarEscaneo();
+    }
+
+    async function iniciarSesion(event) {
+      event.preventDefault();
+      const slug = document.getElementById("login-slug").value.trim();
+      const password = document.getElementById("login-password").value;
+      const btn = document.getElementById("login-btn");
+      const errorMsg = document.getElementById("login-error");
+
+      btn.disabled = true;
+      errorMsg.innerText = "";
+
+      try {
+        const res = await fetch("/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ business_slug: slug, password: password })
+        });
+
+        if (!res.ok) {
+          errorMsg.innerText = res.status === 401 ? "Comercio o clave incorrectos" : "Error del servidor al ingresar";
+          return;
+        }
+
+        const data = await res.json();
+        sessionToken = data.access_token;
+        guardar(TOKEN_KEY, sessionToken);
+        guardar(SLUG_KEY, data.business_slug);
+        mostrarCaja(data.business);
+      } catch (err) {
+        console.error(err);
+        errorMsg.innerText = "Error de red con el servidor.";
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function cerrarSesion() {
+      mostrarLogin();
+    }
+
+    async function detenerCamara() {
+      if (html5QrCode && html5QrCode.isScanning) {
+        try { await html5QrCode.stop(); } catch (e) {}
+      }
+    }
+
     function iniciarCamara() {
-      html5QrCode = new Html5Qrcode("reader");
+      if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
       const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
       html5QrCode.start(
@@ -194,7 +327,11 @@
 
     async function consultarPase(passId) {
       try {
-        const res = await fetch(`/passes/${passId}`);
+        const res = await fetch(`/passes/${encodeURIComponent(passId)}`, { headers: authHeaders() });
+        if (res.status === 401) {
+          mostrarLogin("La sesión venció. Volvé a ingresar.");
+          return;
+        }
         if (!res.ok) {
           alert("Pase no encontrado en la base de datos");
           reiniciarEscaneo();
@@ -230,11 +367,16 @@
       statusMsg.innerText = "Acreditando...";
 
       try {
-        const res = await fetch(`/passes/${currentPassId}/sumar-puntos`, {
+        const res = await fetch(`/passes/${encodeURIComponent(currentPassId)}/sumar-puntos`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ points: points, description: desc })
         });
+
+        if (res.status === 401) {
+          mostrarLogin("La sesión venció. Volvé a ingresar.");
+          return;
+        }
 
         const data = await res.json();
         if (res.ok) {
@@ -243,7 +385,7 @@
           statusMsg.innerText = `¡Sumados ${points} puntos con éxito!`;
         } else {
           statusMsg.style.color = "#f87171";
-          statusMsg.innerText = "Error al acreditar puntos.";
+          statusMsg.innerText = data.detail || "Error al acreditar puntos.";
         }
     
       } catch (err) {
@@ -262,7 +404,25 @@
       iniciarCamara();
     }
 
-    window.addEventListener("load", iniciarCamara);
+    // Al abrir la caja: si hay sesión guardada se valida, si no se pide la clave
+    window.addEventListener("load", async () => {
+      if (!sessionToken) {
+        mostrarLogin();
+        return;
+      }
+      try {
+        const res = await fetch("/auth/me", { headers: authHeaders() });
+        if (!res.ok) {
+          mostrarLogin(res.status === 401 ? "La sesión venció. Volvé a ingresar." : "");
+          return;
+        }
+        const data = await res.json();
+        mostrarCaja(data.business);
+      } catch (err) {
+        console.error(err);
+        mostrarLogin("Error de red con el servidor.");
+      }
+    });
   </script>
 </body>
 </html>

@@ -9,10 +9,12 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from database import get_db
 import models
+from auth import require_admin
 
 router = APIRouter(
     prefix="/businesses",
-    tags=["Comercios (Admin)"]
+    tags=["Comercios (Admin)"],
+    dependencies=[Depends(require_admin)]
 )
 
 class BusinessCreate(BaseModel):

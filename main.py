@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from database import engine, Base
-from routers import businesses, passes
+from routers import auth, businesses, passes
 
 Base.metadata.create_all(bind=engine)
 
@@ -16,6 +16,7 @@ app = FastAPI(title="Sello API - Plataforma de Fidelidad")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+app.include_router(auth.router)
 app.include_router(businesses.router)
 app.include_router(passes.router)
 

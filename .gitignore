@@ -3,6 +3,9 @@ google_credentials.json
 *credentials*.json
 sello-proyecto-*.json
 
+# Clave local para firmar las sesiones de caja
+.secret_key
+
 # Base de datos local de desarrollo
 sello.db
 
