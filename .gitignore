@@ -2,3 +2,13 @@
 google_credentials.json
 *credentials*.json
 sello-proyecto-*.json
+
+# Base de datos local de desarrollo
+sello.db
+
+# Archivos generados por Python
+__pycache__/
+*.pyc
+
+# Archivos de macOS
+.DS_Store
