@@ -98,6 +98,7 @@ def card_design(business: models.Business) -> CardDesign:
         business_name=business.name,
         color=business.brand_color or DEFAULT_CARD_COLOR,
         reward_text=business.reward_text,
+        rewards=[(r.name, r.points_cost) for r in business.active_rewards],
         logo_url=public("logo"),
         hero_url=public("hero"),
     )

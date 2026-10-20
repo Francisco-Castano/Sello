@@ -79,7 +79,10 @@ def get_public_business(slug: str, db: Session = Depends(get_db)):
         "name": business.name,
         "slug": business.slug,
         "active": business.status == "active",
-        **branding_info(business)
+        **branding_info(business),
+        "points_mode": business.points_mode,
+        "pesos_per_point": business.pesos_per_point,
+        "rewards": [{"name": r.name, "points_cost": r.points_cost} for r in business.active_rewards],
     }
 
 

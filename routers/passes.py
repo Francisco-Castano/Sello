@@ -15,6 +15,7 @@ import models
 from GoogleWallet import MI_ISSUER_ID, generate_google_wallet_url, update_google_wallet_pass
 from branding import card_design
 from names import format_person_name
+from program import ProgramError, points_for_amount, rewards_for_balance
 from auth import get_current_business
 
 router = APIRouter(
@@ -37,8 +38,12 @@ class UserRegisterRequest(BaseModel):
     marketing_opt_in: bool = False
 
 class AddPointsRequest(BaseModel):
-    points: int
-    description: str = "Compra en local"
+    points: int | None = None      # Puntos a mano (también negativos, para corregir)
+    amount: float | None = None    # Monto de la compra, si el comercio suma puntos según el monto
+    description: str | None = None
+
+class RedeemRequest(BaseModel):
+    reward_id: str
 
 def normalize_phone(phone: str) -> str | None:
     """Deja solo los dígitos. Acepta de 8 a 15 (con o sin código de país)."""
@@ -166,27 +171,66 @@ def get_business_pass(pass_id: str, business: models.Business, db: Session) -> m
         raise HTTPException(status_code=404, detail="Pase no encontrado")
     return pass_obj
 
-@router.get("/{pass_id}")
-def get_pass_info(
-    pass_id: str,
-    db: Session = Depends(get_db),
-    business: models.Business = Depends(get_current_business)
-):
-    pass_obj = get_business_pass(pass_id, business, db)
+def pass_summary(pass_obj: models.Pass, business: models.Business) -> dict:
+    """Lo que la caja necesita mostrar de un pase: cliente, saldo, cumpleaños, programa y premios."""
     birthday = pass_obj.user.birthday
     birth_year = pass_obj.user.birth_year
     today = date.today()
-
     return {
         "pass_id": pass_obj.id,
         "client_name": format_person_name(pass_obj.user.name),
         "birthday": birthday,
         "birthday_today": birthday == today.strftime("%m-%d"),
         "age": age_on(birth_year, birthday, today) if birthday and birth_year else None,
-        "business": pass_obj.business.name,
+        "business": business.name,
         "balance": pass_obj.balance,
-        "status": pass_obj.status
+        "status": pass_obj.status,
+        "program": {
+            "points_mode": business.points_mode,
+            "points_per_visit": business.points_per_visit,
+            "pesos_per_point": business.pesos_per_point,
+        },
+        "rewards": rewards_for_balance(business, pass_obj.balance),
     }
+
+def apply_movement(db: Session, pass_obj: models.Pass, business: models.Business, points: int,
+                   kind: str, description: str, sale_amount: float | None = None,
+                   reward: models.Reward | None = None) -> dict:
+    """Guarda el movimiento, actualiza el saldo y la tarjeta en Wallet, y devuelve el pase actualizado."""
+    pass_obj.balance += points
+    db.add(models.Transaction(
+        pass_id=pass_obj.id,
+        points=points,
+        kind=kind,
+        description=description,
+        sale_amount=sale_amount,
+        reward_id=reward.id if reward else None,
+    ))
+    db.commit()
+    db.refresh(pass_obj)
+
+    synced = update_google_wallet_pass(
+        issuer_id=MI_ISSUER_ID,
+        pass_id=pass_obj.id,
+        design=card_design(business),
+        user_name=pass_obj.user.name,
+        balance=pass_obj.balance
+    )
+    return {
+        "status": "ok",
+        "points_added": points,
+        "new_balance": pass_obj.balance,
+        "google_wallet_synced": synced,
+        **pass_summary(pass_obj, business),
+    }
+
+@router.get("/{pass_id}")
+def get_pass_info(
+    pass_id: str,
+    db: Session = Depends(get_db),
+    business: models.Business = Depends(get_current_business)
+):
+    return pass_summary(get_business_pass(pass_id, business, db), business)
 
 @router.post("/{pass_id}/sumar-puntos")
 def add_points(
@@ -195,40 +239,47 @@ def add_points(
     db: Session = Depends(get_db),
     business: models.Business = Depends(get_current_business)
 ):
-    # 1. Buscar el pase dentro del comercio logueado
+    """Suma puntos por una compra (con el monto, si el comercio usa ese modo) o hace un ajuste manual."""
     pass_obj = get_business_pass(pass_id, business, db)
-
-    if data.points == 0:
-        raise HTTPException(status_code=400, detail="La cantidad de puntos no puede ser 0")
     if pass_obj.status != "active":
         raise HTTPException(status_code=400, detail="El pase no está activo")
+
+    if data.amount is not None:
+        try:
+            points = points_for_amount(business, data.amount)
+        except ProgramError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        return apply_movement(db, pass_obj, business, points, "earn",
+                              data.description or "Compra en local", sale_amount=data.amount)
+
+    if not data.points:
+        raise HTTPException(status_code=400, detail="La cantidad de puntos no puede ser 0")
     if pass_obj.balance + data.points < 0:
         raise HTTPException(status_code=400, detail="Saldo insuficiente para el canje")
 
-    # 2. Actualizar el saldo y guardar la transacción contable
-    pass_obj.balance += data.points
-    tx = models.Transaction(
-        pass_id=pass_obj.id,
-        points=data.points,
-        description=data.description
-    )
-    db.add(tx)
-    db.commit()
-    db.refresh(pass_obj)
+    # En modo "por monto" los puntos a mano son ajustes; en modo fijo, una compra normal
+    is_purchase = data.points > 0 and business.points_mode == "fixed"
+    kind = "earn" if is_purchase else "adjust"
+    description = data.description or ("Compra en local" if is_purchase else "Ajuste manual")
+    return apply_movement(db, pass_obj, business, data.points, kind, description)
 
-    # 3. Sincronizar en vivo con Google Wallet
-    push_success = update_google_wallet_pass(
-        issuer_id=MI_ISSUER_ID,
-        pass_id=pass_obj.id,
-        design=card_design(business),
-        user_name=pass_obj.user.name,
-        balance=pass_obj.balance
-    )
+@router.post("/{pass_id}/canjear")
+def redeem_reward(
+    pass_id: str,
+    data: RedeemRequest,
+    db: Session = Depends(get_db),
+    business: models.Business = Depends(get_current_business)
+):
+    pass_obj = get_business_pass(pass_id, business, db)
+    if pass_obj.status != "active":
+        raise HTTPException(status_code=400, detail="El pase no está activo")
 
-    return {
-        "status": "ok",
-        "pass_id": pass_obj.id,
-        "points_added": data.points,
-        "new_balance": pass_obj.balance,
-        "google_wallet_synced": push_success
-    }
+    reward = next((r for r in business.active_rewards if r.id == data.reward_id), None)
+    if not reward:
+        raise HTTPException(status_code=404, detail="Premio no encontrado")
+    if pass_obj.balance < reward.points_cost:
+        missing = reward.points_cost - pass_obj.balance
+        raise HTTPException(status_code=400, detail=f"Le faltan {missing} puntos para canjear {reward.name}")
+
+    return apply_movement(db, pass_obj, business, -reward.points_cost, "redeem",
+                          f"Canje: {reward.name}", reward=reward)

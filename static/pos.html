@@ -163,6 +163,124 @@
       color: #94a3b8;
       margin-top: 2px;
     }
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin: 20px 0 8px;
+    }
+    .hint {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 6px;
+    }
+    .reward-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .reward-row.available {
+      border-color: #4ade80;
+      background: rgba(74, 222, 128, 0.06);
+    }
+    .reward-name {
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .reward-cost {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .reward-missing {
+      font-size: 12px;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+    .btn-small {
+      background: #16a34a;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-small:hover { background: #15803d; }
+    .btn-small:disabled { opacity: 0.6; cursor: default; }
+    details.adjust {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+    details.adjust summary {
+      cursor: pointer;
+    }
+    details.adjust .adjust-body {
+      margin-top: 12px;
+    }
+    .mode-option {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 12px;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    .mode-option input { width: auto; margin-top: 3px; }
+    .mode-option strong { display: block; font-size: 15px; color: #f1f5f9; }
+    .mode-option span { font-size: 13px; color: #94a3b8; }
+    .inline-input {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+    }
+    .inline-input input { width: 140px; }
+    .program-reward {
+      display: grid;
+      grid-template-columns: 1fr 90px auto;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .program-reward input { padding: 9px; font-size: 15px; }
+    .icon-btn {
+      background: none;
+      border: 1px solid #475569;
+      color: #94a3b8;
+      border-radius: 8px;
+      width: 38px;
+      height: 38px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .add-btn {
+      background: none;
+      border: 1px dashed #475569;
+      color: #38bdf8;
+      border-radius: 8px;
+      padding: 9px;
+      width: 100%;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    #program-status {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 500;
+    }
     .session-actions {
       display: flex;
       gap: 16px;
@@ -229,6 +347,7 @@
     <div class="session-bar" id="session-bar">
       <span id="session-business">Comercio</span>
       <div class="session-actions">
+        <button class="link-btn" onclick="abrirPrograma()">Premios</button>
         <button class="link-btn" id="branding-btn" onclick="abrirMiTarjeta()">Mi tarjeta</button>
         <button class="link-btn" onclick="cerrarSesion()">Cerrar caja</button>
       </div>
@@ -248,6 +367,42 @@
     <!-- Visor de la cámara -->
     <div id="reader"></div>
 
+    <!-- Programa de puntos: cómo se suman y qué premios hay -->
+    <div id="program-panel" class="card-panel">
+      <h2 style="font-size: 18px; margin: 0 0 4px;">Premios y puntos</h2>
+      <p style="font-size: 13px; color: #94a3b8; margin: 0 0 16px;">Definí cómo suman puntos tus clientes y qué premios pueden canjear.</p>
+
+      <div class="section-label" style="margin-top: 0;">Cómo se suman los puntos</div>
+      <label class="mode-option">
+        <input type="radio" name="points-mode" value="fixed" onchange="mostrarModo()" />
+        <div><strong>Puntos fijos por compra</strong><span>El cajero suma una cantidad de puntos en cada compra.</span></div>
+      </label>
+      <label class="mode-option">
+        <input type="radio" name="points-mode" value="amount" onchange="mostrarModo()" />
+        <div><strong>Según el monto de la compra</strong><span>El cajero ingresa el monto y el sistema calcula los puntos.</span></div>
+      </label>
+
+      <div class="input-group" id="mode-fixed-config">
+        <label for="points-per-visit">Puntos por compra:</label>
+        <input type="number" id="points-per-visit" min="1" max="10000" />
+        <div class="hint">Es el valor que aparece cargado en la caja; el cajero lo puede cambiar en cada compra.</div>
+      </div>
+      <div class="input-group" id="mode-amount-config">
+        <label for="pesos-per-point">Equivalencia:</label>
+        <div class="inline-input">1 punto cada $ <input type="number" id="pesos-per-point" min="1" oninput="mostrarEjemplo()" /></div>
+        <div class="hint" id="amount-example"></div>
+      </div>
+
+      <div class="section-label">Premios</div>
+      <div id="program-rewards"></div>
+      <button type="button" class="add-btn" onclick="agregarPremio()">+ Agregar premio</button>
+      <div class="hint">Por ejemplo: "Café gratis" por 100 puntos. Tus clientes ven en su tarjeta cuánto les falta para el próximo.</div>
+
+      <button class="btn-action" id="program-save-btn" onclick="guardarPrograma()" style="margin-top: 18px;">Guardar</button>
+      <button class="btn-action btn-secondary" onclick="cerrarPrograma()">Volver a la caja</button>
+      <div id="program-status"></div>
+    </div>
+
     <!-- Panel de control de puntos tras escanear -->
     <div id="card-panel" class="card-panel">
       <span class="badge" id="business-badge">Comercio</span>
@@ -261,17 +416,39 @@
       <div style="font-size: 13px; color: #94a3b8;">Saldo actual:</div>
       <div class="balance-display" id="client-balance">0 pts</div>
 
-      <div class="input-group">
+      <div class="input-group" id="earn-amount" hidden>
+        <label for="amount-input">Monto de la compra ($):</label>
+        <input type="number" id="amount-input" min="0" step="0.01" inputmode="decimal" oninput="previsualizarPuntos()" />
+        <div class="hint" id="amount-preview"></div>
+      </div>
+
+      <div class="input-group" id="earn-fixed" hidden>
         <label for="points-input">Puntos a sumar:</label>
-        <input type="number" id="points-input" value="10" min="1" />
+        <input type="number" id="points-input" min="1" />
       </div>
 
-      <div class="input-group">
-        <label for="desc-input">Concepto / Motivo:</label>
-        <input type="text" id="desc-input" value="Compra en caja" />
+      <button class="btn-action" id="submit-points-btn" onclick="acreditarPuntos()">Sumar puntos</button>
+
+      <div id="rewards-block" hidden>
+        <div class="section-label">Premios</div>
+        <div id="rewards-list"></div>
       </div>
 
-      <button class="btn-action" id="submit-points-btn" onclick="acreditarPuntos()">Sumar Puntos</button>
+      <details class="adjust" id="adjust-block">
+        <summary>Ajustar puntos a mano</summary>
+        <div class="adjust-body">
+          <div class="input-group">
+            <label for="adjust-points">Puntos (negativo para descontar):</label>
+            <input type="number" id="adjust-points" />
+          </div>
+          <div class="input-group">
+            <label for="adjust-desc">Motivo:</label>
+            <input type="text" id="adjust-desc" placeholder="Ej: corrección de una carga" />
+          </div>
+          <button class="btn-action btn-secondary" id="adjust-btn" onclick="aplicarAjuste()">Aplicar ajuste</button>
+        </div>
+      </details>
+
       <button class="btn-action btn-secondary" onclick="reiniciarEscaneo()">Escanear otro cliente</button>
 
       <div id="status-msg"></div>
@@ -309,6 +486,7 @@
       document.getElementById("reader").style.display = "none";
       document.getElementById("card-panel").style.display = "none";
       document.getElementById("branding-panel").style.display = "none";
+      document.getElementById("program-panel").style.display = "none";
       document.getElementById("session-bar").style.display = "none";
       document.getElementById("subtitle").innerText = "Ingresá con la clave de caja del comercio";
       document.getElementById("login-panel").style.display = "block";
@@ -376,6 +554,7 @@
       await detenerCamara();
       document.getElementById("reader").style.display = "none";
       document.getElementById("card-panel").style.display = "none";
+      document.getElementById("program-panel").style.display = "none";
       status.innerText = "";
 
       try {
@@ -428,7 +607,7 @@
         brandingEditor = SelloCardEditor.create(document.getElementById("branding-editor"), data);
         status.style.color = "#4ade80";
         status.innerText = data.passes_to_update
-          ? `¡Guardado! Estamos actualizando las ${data.passes_to_update} tarjetas de tus clientes.`
+          ? `¡Guardado! ${textoTarjetas(data.passes_to_update)}`
           : "¡Guardado! Las próximas tarjetas van a salir con este diseño.";
       } catch (err) {
         console.error(err);
@@ -475,6 +654,92 @@
       consultarPase(currentPassId);
     }
 
+    let currentPass = null;
+
+    const pesos = n => "$" + Number(n).toLocaleString("es-AR");
+
+    function textoTarjetas(cantidad) {
+      return cantidad === 1
+        ? "Estamos actualizando la tarjeta de tu cliente."
+        : `Estamos actualizando las ${cantidad} tarjetas de tus clientes.`;
+    }
+    const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+                   "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    function mostrarEstado(texto, tipo) {
+      const statusMsg = document.getElementById("status-msg");
+      statusMsg.style.color = { ok: "#4ade80", error: "#f87171" }[tipo] || "#94a3b8";
+      statusMsg.innerText = texto;
+    }
+
+    // Muestra el cliente, su saldo, cómo se suman puntos en este comercio y sus premios
+    function mostrarPase(data) {
+      currentPass = data;
+      document.getElementById("client-name").innerText = data.client_name;
+      const cumple = document.getElementById("client-birthday");
+      if (data.birthday) {
+        const [mes, dia] = data.birthday.split("-").map(Number);
+        const edad = data.age !== null ? ` (${data.age} años)` : "";
+        cumple.innerText = `Cumpleaños: ${dia} de ${MESES[mes - 1]}${edad}`;
+      }
+      cumple.hidden = !data.birthday;
+      const alerta = document.getElementById("birthday-alert");
+      alerta.innerText = data.age !== null ? `🎂 ¡Hoy cumple ${data.age} años!` : "🎂 ¡Hoy es su cumpleaños!";
+      alerta.hidden = !data.birthday_today;
+      document.getElementById("pass-id-label").innerText = `ID: ${data.pass_id}`;
+      document.getElementById("business-badge").innerText = data.business;
+      document.getElementById("client-balance").innerText = `${data.balance} pts`;
+
+      const porMonto = data.program.points_mode === "amount";
+      document.getElementById("earn-amount").hidden = !porMonto;
+      document.getElementById("earn-fixed").hidden = porMonto;
+      document.getElementById("amount-input").value = "";
+      document.getElementById("points-input").value = data.program.points_per_visit;
+      previsualizarPuntos();
+
+      const lista = document.getElementById("rewards-list");
+      lista.innerHTML = "";
+      data.rewards.forEach(premio => {
+        const fila = el("div", "reward-row" + (premio.available ? " available" : ""));
+        const info = el("div");
+        info.appendChild(el("div", "reward-name", premio.name));
+        info.appendChild(el("div", "reward-cost", `${premio.points_cost} pts`));
+        fila.appendChild(info);
+        if (premio.available) {
+          const boton = el("button", "btn-small", "Canjear");
+          boton.addEventListener("click", () => canjearPremio(premio, boton));
+          fila.appendChild(boton);
+        } else {
+          fila.appendChild(el("div", "reward-missing", `Faltan ${premio.missing} pts`));
+        }
+        lista.appendChild(fila);
+      });
+      document.getElementById("rewards-block").hidden = data.rewards.length === 0;
+      document.getElementById("card-panel").style.display = "block";
+    }
+
+    function previsualizarPuntos() {
+      const preview = document.getElementById("amount-preview");
+      if (!currentPass || currentPass.program.points_mode !== "amount") return;
+      const cada = currentPass.program.pesos_per_point;
+      const monto = parseFloat(document.getElementById("amount-input").value);
+      if (isNaN(monto) || monto <= 0) {
+        preview.innerText = `1 punto cada ${pesos(cada)}`;
+        return;
+      }
+      const puntos = Math.floor(monto / cada);
+      preview.innerText = puntos > 0
+        ? `= ${puntos} punto${puntos === 1 ? "" : "s"} (1 punto cada ${pesos(cada)})`
+        : `No alcanza para sumar puntos (1 punto cada ${pesos(cada)})`;
+    }
+
     async function consultarPase(passId) {
       try {
         const res = await fetch(`/passes/${encodeURIComponent(passId)}`, { headers: authHeaders() });
@@ -487,25 +752,7 @@
           reiniciarEscaneo();
           return;
         }
-
-        const data = await res.json();
-        document.getElementById("client-name").innerText = data.client_name;
-        const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
-                       "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-        const cumple = document.getElementById("client-birthday");
-        if (data.birthday) {
-          const [mes, dia] = data.birthday.split("-").map(Number);
-          const edad = data.age !== null ? ` (${data.age} años)` : "";
-          cumple.innerText = `Cumpleaños: ${dia} de ${meses[mes - 1]}${edad}`;
-        }
-        cumple.hidden = !data.birthday;
-        const alerta = document.getElementById("birthday-alert");
-        alerta.innerText = data.age !== null ? `🎂 ¡Hoy cumple ${data.age} años!` : "🎂 ¡Hoy es su cumpleaños!";
-        alerta.hidden = !data.birthday_today;
-        document.getElementById("pass-id-label").innerText = `ID: ${data.pass_id}`;
-        document.getElementById("business-badge").innerText = data.business;
-        document.getElementById("client-balance").innerText = `${data.balance} pts`;
-        document.getElementById("card-panel").style.display = "block";
+        mostrarPase(await res.json());
       } catch (err) {
         console.error(err);
         alert("Error al consultar el pase.");
@@ -513,50 +760,216 @@
       }
     }
 
-    async function acreditarPuntos() {
-      const points = parseInt(document.getElementById("points-input").value);
-      const desc = document.getElementById("desc-input").value;
-      const statusMsg = document.getElementById("status-msg");
-      const btn = document.getElementById("submit-points-btn");
-
-      if (isNaN(points) || points <= 0) {
-        alert("Ingresa una cantidad de puntos válida");
-        return;
-      }
-
-      btn.disabled = true;
-      statusMsg.style.color = "#94a3b8";
-      statusMsg.innerText = "Acreditando...";
-
+    // Manda un movimiento a la API y muestra el pase actualizado
+    async function enviarMovimiento(url, body, boton, mensajeOk) {
+      boton.disabled = true;
+      mostrarEstado("Guardando...");
       try {
-        const res = await fetch(`/passes/${encodeURIComponent(currentPassId)}/sumar-puntos`, {
+        const res = await fetch(url, {
           method: "POST",
           headers: authHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify({ points: points, description: desc })
+          body: JSON.stringify(body)
         });
+        if (res.status === 401) {
+          mostrarLogin("La sesión venció. Volvé a ingresar.");
+          return false;
+        }
+        let data = {};
+        try { data = await res.json(); } catch (e) {}
+        if (!res.ok) {
+          mostrarEstado((typeof data.detail === "string" && data.detail) || "No se pudo guardar el movimiento.", "error");
+          return false;
+        }
+        mostrarPase(data);
+        mostrarEstado(mensajeOk(data), "ok");
+        return true;
+      } catch (err) {
+        console.error(err);
+        mostrarEstado("Error de red con el servidor.", "error");
+        return false;
+      } finally {
+        boton.disabled = false;
+      }
+    }
 
+    async function acreditarPuntos() {
+      const url = `/passes/${encodeURIComponent(currentPassId)}/sumar-puntos`;
+      const boton = document.getElementById("submit-points-btn");
+      if (currentPass.program.points_mode === "amount") {
+        const monto = parseFloat(document.getElementById("amount-input").value);
+        if (isNaN(monto) || monto <= 0) {
+          mostrarEstado("Ingresá el monto de la compra.", "error");
+          return;
+        }
+        await enviarMovimiento(url, { amount: monto }, boton, d => `¡Sumados ${d.points_added} puntos por una compra de ${pesos(monto)}!`);
+      } else {
+        const puntos = parseInt(document.getElementById("points-input").value);
+        if (isNaN(puntos) || puntos <= 0) {
+          mostrarEstado("Ingresá una cantidad de puntos válida.", "error");
+          return;
+        }
+        await enviarMovimiento(url, { points: puntos }, boton, d => `¡Sumados ${d.points_added} puntos!`);
+      }
+    }
+
+    async function canjearPremio(premio, boton) {
+      if (!confirm(`¿Canjear "${premio.name}" por ${premio.points_cost} puntos?`)) return;
+      await enviarMovimiento(`/passes/${encodeURIComponent(currentPassId)}/canjear`, { reward_id: premio.id }, boton,
+        d => `Canjeado: ${premio.name}. Le quedan ${d.new_balance} pts.`);
+    }
+
+    async function aplicarAjuste() {
+      const puntos = parseInt(document.getElementById("adjust-points").value);
+      const motivo = document.getElementById("adjust-desc").value.trim();
+      if (isNaN(puntos) || puntos === 0) {
+        mostrarEstado("Ingresá los puntos del ajuste (distinto de 0).", "error");
+        return;
+      }
+      const ok = await enviarMovimiento(`/passes/${encodeURIComponent(currentPassId)}/sumar-puntos`,
+        { points: puntos, description: motivo || null }, document.getElementById("adjust-btn"),
+        d => `Ajuste aplicado: ${puntos > 0 ? "+" : ""}${puntos} pts.`);
+      if (ok) {
+        document.getElementById("adjust-points").value = "";
+        document.getElementById("adjust-desc").value = "";
+        document.getElementById("adjust-block").open = false;
+      }
+    }
+
+    // --- Premios y puntos (configuración) ---
+    let programaPremios = [];
+
+    async function abrirPrograma() {
+      await detenerCamara();
+      document.getElementById("reader").style.display = "none";
+      document.getElementById("card-panel").style.display = "none";
+      document.getElementById("branding-panel").style.display = "none";
+      document.getElementById("program-status").innerText = "";
+      try {
+        const res = await fetch("/program", { headers: authHeaders() });
         if (res.status === 401) {
           mostrarLogin("La sesión venció. Volvé a ingresar.");
           return;
         }
-
-        const data = await res.json();
-        if (res.ok) {
-          document.getElementById("client-balance").innerText = `${data.new_balance} pts`;
-          statusMsg.style.color = "#4ade80";
-          statusMsg.innerText = `¡Sumados ${points} puntos con éxito!`;
-        } else {
-          statusMsg.style.color = "#f87171";
-          statusMsg.innerText = data.detail || "Error al acreditar puntos.";
-        }
-    
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        cargarPrograma(await res.json());
+        document.getElementById("subtitle").innerText = "Configurá los premios de tu comercio";
+        document.getElementById("program-panel").style.display = "block";
       } catch (err) {
         console.error(err);
-        statusMsg.style.color = "#f87171";
-        statusMsg.innerText = "Error de red con el servidor.";
-      } finally {
-        btn.disabled = false;
+        alert("No se pudo cargar el programa de puntos.");
+        cerrarPrograma();
       }
+    }
+
+    function cargarPrograma(data) {
+      document.querySelectorAll('input[name="points-mode"]').forEach(r => r.checked = r.value === data.points_mode);
+      document.getElementById("points-per-visit").value = data.points_per_visit;
+      document.getElementById("pesos-per-point").value = data.pesos_per_point || "";
+      programaPremios = data.rewards.map(r => ({ ...r }));
+      mostrarModo();
+      dibujarPremios();
+    }
+
+    function mostrarModo() {
+      const modo = document.querySelector('input[name="points-mode"]:checked')?.value || "fixed";
+      document.getElementById("mode-fixed-config").hidden = modo !== "fixed";
+      document.getElementById("mode-amount-config").hidden = modo !== "amount";
+      mostrarEjemplo();
+    }
+
+    function mostrarEjemplo() {
+      const pesos = parseInt(document.getElementById("pesos-per-point").value);
+      document.getElementById("amount-example").innerText = pesos > 0
+        ? `Ej: una compra de $${(pesos * 5).toLocaleString("es-AR")} suma 5 puntos. Se cuentan solo los $${pesos.toLocaleString("es-AR")} completos.`
+        : "Ej: con 1 punto cada $1000, una compra de $5.000 suma 5 puntos.";
+    }
+
+    function dibujarPremios() {
+      const contenedor = document.getElementById("program-rewards");
+      contenedor.innerHTML = "";
+      programaPremios.forEach((premio, i) => {
+        const fila = el("div", "program-reward");
+        const nombre = el("input");
+        nombre.type = "text";
+        nombre.placeholder = "Nombre del premio";
+        nombre.maxLength = 40;
+        nombre.value = premio.name;
+        nombre.setAttribute("aria-label", "Nombre del premio");
+        nombre.addEventListener("input", () => premio.name = nombre.value);
+        const puntos = el("input");
+        puntos.type = "number";
+        puntos.min = "1";
+        puntos.placeholder = "Puntos";
+        puntos.value = premio.points_cost || "";
+        puntos.setAttribute("aria-label", "Puntos que cuesta");
+        puntos.addEventListener("input", () => premio.points_cost = parseInt(puntos.value) || null);
+        const quitar = el("button", "icon-btn", "✕");
+        quitar.type = "button";
+        quitar.setAttribute("aria-label", `Quitar premio ${premio.name || ""}`);
+        quitar.addEventListener("click", () => { programaPremios.splice(i, 1); dibujarPremios(); });
+        [nombre, puntos, quitar].forEach(n => fila.appendChild(n));
+        contenedor.appendChild(fila);
+      });
+    }
+
+    function agregarPremio() {
+      programaPremios.push({ id: null, name: "", points_cost: null });
+      dibujarPremios();
+      const inputs = document.querySelectorAll("#program-rewards .program-reward input[type=text]");
+      inputs[inputs.length - 1].focus();
+    }
+
+    async function guardarPrograma() {
+      const status = document.getElementById("program-status");
+      const boton = document.getElementById("program-save-btn");
+      const modo = document.querySelector('input[name="points-mode"]:checked')?.value || "fixed";
+      const cuerpo = {
+        points_mode: modo,
+        points_per_visit: parseInt(document.getElementById("points-per-visit").value) || 0,
+        pesos_per_point: parseInt(document.getElementById("pesos-per-point").value) || null,
+        rewards: programaPremios
+          .filter(p => (p.name || "").trim() || p.points_cost)
+          .map(p => ({ id: p.id, name: (p.name || "").trim(), points_cost: p.points_cost || 0 }))
+      };
+
+      boton.disabled = true;
+      status.style.color = "#94a3b8";
+      status.innerText = "Guardando...";
+      try {
+        const res = await fetch("/program", {
+          method: "PUT",
+          headers: authHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify(cuerpo)
+        });
+        if (res.status === 401) {
+          mostrarLogin("La sesión venció. Volvé a ingresar.");
+          return;
+        }
+        let data = {};
+        try { data = await res.json(); } catch (e) {}
+        if (!res.ok) {
+          status.style.color = "#f87171";
+          status.innerText = (typeof data.detail === "string" && data.detail) || "No se pudo guardar.";
+          return;
+        }
+        cargarPrograma(data);
+        status.style.color = "#4ade80";
+        status.innerText = data.passes_to_update
+          ? `¡Guardado! ${textoTarjetas(data.passes_to_update)}`
+          : "¡Guardado!";
+      } catch (err) {
+        console.error(err);
+        status.style.color = "#f87171";
+        status.innerText = "Error de red con el servidor.";
+      } finally {
+        boton.disabled = false;
+      }
+    }
+
+    function cerrarPrograma() {
+      document.getElementById("program-panel").style.display = "none";
+      document.getElementById("subtitle").innerText = "Escanea la tarjeta del cliente para acreditar puntos";
+      reiniciarEscaneo();
     }
 
     function reiniciarEscaneo() {

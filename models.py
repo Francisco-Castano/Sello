@@ -5,7 +5,7 @@ Estructura las tablas de la base de datos (comercios, usuarios, pases/tarjetas) 
 
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, JSON, LargeBinary, Boolean
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, JSON, LargeBinary, Boolean, Float
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -20,12 +20,22 @@ class Business(Base):
     contact_email = Column(String, nullable=True)             # Para avisarle cuando se aprueba el alta
     brand_color = Column(String, nullable=True)               # Color de fondo de la tarjeta, ej: #1E3A8A
     reward_text = Column(String, nullable=True)               # Ej: Juntá 100 puntos y llevate un café
+    # Cómo se suman los puntos: "fixed" (el cajero carga una cantidad, sugerida por visita)
+    # o "amount" (se calcula con el monto de la compra: 1 punto cada pesos_per_point pesos)
+    points_mode = Column(String, nullable=False, default="fixed", server_default="fixed")
+    points_per_visit = Column(Integer, nullable=False, default=10, server_default="10")
+    pesos_per_point = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relaciones
     passes = relationship("Pass", back_populates="business")
     pos_credential = relationship("PosCredential", back_populates="business", uselist=False)
     images = relationship("BusinessImage", back_populates="business", cascade="all, delete-orphan")
+    rewards = relationship("Reward", back_populates="business", order_by="Reward.points_cost")
+
+    @property
+    def active_rewards(self):
+        return [r for r in self.rewards if r.active]
 
     def get_image(self, kind: str):
         return next((img for img in self.images if img.kind == kind), None)
@@ -97,6 +107,20 @@ class Pass(Base):
     transactions = relationship("Transaction", back_populates="pass_rel")
 
 
+class Reward(Base):
+    """Premio que el comercio ofrece a cambio de puntos."""
+    __tablename__ = "rewards"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    business_id = Column(String, ForeignKey("businesses.id"), nullable=False, index=True)
+    name = Column(String, nullable=False)                 # Ej: Café gratis
+    points_cost = Column(Integer, nullable=False)         # Puntos que cuesta canjearlo
+    active = Column(Boolean, nullable=False, default=True)  # Los premios borrados se desactivan para no perder el historial
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    business = relationship("Business", back_populates="rewards")
+
+
 class Transaction(Base):
     """Libro contable de puntos (auditoría de cada escaneo en caja)."""
     __tablename__ = "transactions"
@@ -105,6 +129,9 @@ class Transaction(Base):
     pass_id = Column(String, ForeignKey("passes.id"), nullable=False)
     points = Column(Integer, nullable=False)        # +10 por compra, -50 por premio
     description = Column(String, nullable=True)     # "Compra café", "Canje alfajor"
+    kind = Column(String, nullable=False, default="earn", server_default="earn")  # earn, redeem, adjust
+    sale_amount = Column(Float, nullable=True)      # Monto de la compra, si los puntos salieron de ahí
+    reward_id = Column(String, ForeignKey("rewards.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     pass_rel = relationship("Pass", back_populates="transactions")

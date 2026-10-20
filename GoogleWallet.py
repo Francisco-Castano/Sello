@@ -6,8 +6,9 @@ Gestiona la lógica de creación, formato y firma de pases digitales para la bil
 import json
 import os
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from names import format_person_name
+from program import reward_progress
 import jwt
 import requests
 from google.oauth2 import service_account
@@ -54,7 +55,8 @@ class CardDesign:
     """Cómo se ve la tarjeta de un comercio. Las imágenes tienen que ser URLs públicas con https."""
     business_name: str
     color: str = DEFAULT_CARD_COLOR
-    reward_text: str | None = None
+    reward_text: str | None = None          # Texto libre, si el comercio no cargó premios
+    rewards: list[tuple[str, int]] = field(default_factory=list)  # (nombre, puntos) de cada premio
     logo_url: str | None = None
     hero_url: str | None = None
 
@@ -72,8 +74,10 @@ def build_visual_fields(design: CardDesign, user_name: str, balance: int) -> dic
     text_modules = [
         {"id": "balance_module", "header": "Puntos", "body": f"{balance} pts"}
     ]
-    if design.reward_text:
-        text_modules.append({"id": "reward_module", "header": "Premio", "body": design.reward_text})
+    # Con premios cargados se muestra el progreso del cliente; si no, el texto libre del comercio
+    reward_line = reward_progress(design.rewards, balance) or design.reward_text
+    if reward_line:
+        text_modules.append({"id": "reward_module", "header": "Premio", "body": reward_line})
 
     fields = {
         "cardTitle": _text(design.business_name),

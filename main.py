@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from database import setup_database
-from routers import auth, branding, businesses, passes
+from routers import auth, branding, businesses, passes, program
 
 setup_database()
 
@@ -21,6 +21,7 @@ app.include_router(businesses.router)
 app.include_router(businesses.public_router)
 app.include_router(passes.router)
 app.include_router(branding.router)
+app.include_router(program.router)
 
 # Las páginas se revalidan en cada visita para que nadie quede usando una versión vieja
 NO_CACHE_HEADERS = {"Cache-Control": "no-cache"}

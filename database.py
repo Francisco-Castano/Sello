@@ -29,6 +29,9 @@ ADDED_COLUMNS = {
         "contact_email": "VARCHAR",
         "brand_color": "VARCHAR",
         "reward_text": "VARCHAR",
+        "points_mode": "VARCHAR NOT NULL DEFAULT 'fixed'",
+        "points_per_visit": "INTEGER NOT NULL DEFAULT 10",
+        "pesos_per_point": "INTEGER",
     },
     "users": {
         "birthday": "VARCHAR",
@@ -38,6 +41,11 @@ ADDED_COLUMNS = {
         "privacy_accepted_at": "DATETIME",
         "privacy_version": "VARCHAR",
         "marketing_opt_in": "BOOLEAN NOT NULL DEFAULT 0",
+    },
+    "transactions": {
+        "kind": "VARCHAR NOT NULL DEFAULT 'earn'",
+        "sale_amount": "FLOAT",
+        "reward_id": "VARCHAR",
     },
 }
 

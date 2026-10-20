@@ -28,6 +28,7 @@ import main
 import models
 from routers import branding as branding_router
 from routers import passes
+from routers import program as program_router
 
 
 # --- Base de datos ---
@@ -96,6 +97,7 @@ def wallet(monkeypatch):
     monkeypatch.setattr(passes, "generate_google_wallet_url", fake.generate_url)
     monkeypatch.setattr(passes, "update_google_wallet_pass", fake.update_pass)
     monkeypatch.setattr(branding_router, "sync_business_passes", fake.synced_businesses.append)
+    monkeypatch.setattr(program_router, "sync_business_passes", fake.synced_businesses.append)
     monkeypatch.setattr(branding, "PUBLIC_URL", "")
     return fake
 

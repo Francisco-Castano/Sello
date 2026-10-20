@@ -131,6 +131,37 @@
       display: none;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     }
+    #business-rewards {
+      display: none;
+      text-align: left;
+      font-size: 14px;
+      color: #374151;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin: -8px 0 20px;
+    }
+    #business-rewards ul {
+      list-style: none;
+      margin: 6px 0 0;
+      padding: 0;
+    }
+    #business-rewards li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 4px 0;
+    }
+    #business-rewards li span:last-child {
+      color: #6b7280;
+      white-space: nowrap;
+    }
+    #business-rewards .earn-rule {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 8px;
+    }
     #business-reward {
       display: none;
       font-size: 14px;
@@ -192,6 +223,7 @@
 
     <div id="signup-form">
       <div id="business-reward"></div>
+      <div id="business-rewards"></div>
 
       <div class="field">
         <label for="userName">Nombre y apellido</label>
@@ -288,6 +320,26 @@
         logo.src = business.logo_url;
         logo.alt = `Logo de ${business.name}`;
         logo.style.display = "block";
+      }
+
+      if (business.rewards && business.rewards.length) {
+        const box = document.getElementById("business-rewards");
+        box.appendChild(Object.assign(document.createElement("strong"), { textContent: "Premios que podés canjear" }));
+        const lista = document.createElement("ul");
+        business.rewards.forEach(premio => {
+          const item = document.createElement("li");
+          item.appendChild(Object.assign(document.createElement("span"), { textContent: premio.name }));
+          item.appendChild(Object.assign(document.createElement("span"), { textContent: `${premio.points_cost} pts` }));
+          lista.appendChild(item);
+        });
+        box.appendChild(lista);
+        if (business.points_mode === "amount" && business.pesos_per_point) {
+          box.appendChild(Object.assign(document.createElement("div"), {
+            className: "earn-rule",
+            textContent: `Sumás 1 punto cada $${business.pesos_per_point.toLocaleString("es-AR")} de compra.`
+          }));
+        }
+        box.style.display = "block";
       }
 
       if (business.reward_text) {
